@@ -1,0 +1,243 @@
+import React, { useEffect } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeScreen } from '../../../src/components/layout/SafeScreen';
+import { Header } from '../../../src/components/layout/Header';
+import { Card } from '../../../src/components/ui/Card';
+import { Button } from '../../../src/components/ui/Button';
+import { RoleGuard } from '../../../src/components/guards/RoleGuard';
+import { useAdminStore } from '../../../src/stores/useAdminStore';
+import { formatCurrency } from '../../../src/utils/formatters';
+import { colors, fontFamily, spacing, borderRadius } from '../../../src/theme';
+
+export default function SalesReportScreen() {
+  const router = useRouter();
+  const { salesReport, isLoading, fetchSalesReport } = useAdminStore();
+
+  useEffect(() => {
+    fetchSalesReport();
+  }, []);
+
+  return (
+    <RoleGuard allowedRoles={['superadmin']}>
+      <SafeScreen>
+        <Header
+          title="Sales Report"
+          showBack
+          onBack={() => router.back()}
+        />
+
+        {isLoading && !salesReport ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary.yellow} />
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.container}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Total Revenue */}
+            <Card style={styles.revenueCard}>
+              <Text style={styles.revenueLabel}>Total Revenue</Text>
+              <Text style={styles.revenueValue}>
+                {formatCurrency(salesReport?.totalRevenue ?? 0)}
+              </Text>
+            </Card>
+
+            {/* Monthly Breakdown */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Monthly Breakdown</Text>
+              {salesReport?.monthlyBreakdown?.map((month, index) => (
+                <View key={index} style={styles.monthRow}>
+                  <View style={styles.monthInfo}>
+                    <Text style={styles.monthName}>{month.month}</Text>
+                    <Text style={styles.monthOrders}>
+                      {month.orders} order{month.orders !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.monthRevenue}>
+                    {formatCurrency(month.revenue)}
+                  </Text>
+                </View>
+              ))}
+
+              {(!salesReport?.monthlyBreakdown || salesReport.monthlyBreakdown.length === 0) && (
+                <Text style={styles.emptyText}>No monthly data available</Text>
+              )}
+            </View>
+
+            {/* Top Performing Products */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Top Performing Products</Text>
+              {salesReport?.topProducts?.map((item, index) => (
+                <Card key={index} style={styles.productCard}>
+                  <View style={styles.productRow}>
+                    <View style={styles.rankBadge}>
+                      <Text style={styles.rankText}>#{index + 1}</Text>
+                    </View>
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName} numberOfLines={1}>
+                        {item.product?.name ?? 'Product'}
+                      </Text>
+                      <Text style={styles.productSold}>
+                        {item.totalSold} sold
+                      </Text>
+                    </View>
+                    <Text style={styles.productRevenue}>
+                      {formatCurrency(item.revenue)}
+                    </Text>
+                  </View>
+                </Card>
+              ))}
+
+              {(!salesReport?.topProducts || salesReport.topProducts.length === 0) && (
+                <Text style={styles.emptyText}>No product data available</Text>
+              )}
+            </View>
+
+            {/* Export Button */}
+            <Button
+              title="Export Data"
+              onPress={() => {}}
+              variant="secondary"
+              size="lg"
+              fullWidth
+              leftIcon={
+                <Ionicons name="download-outline" size={20} color={colors.text.white} />
+              }
+            />
+          </ScrollView>
+        )}
+      </SafeScreen>
+    </RoleGuard>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  revenueCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    marginBottom: spacing.xxl,
+    backgroundColor: colors.background.dark,
+  },
+  revenueLabel: {
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.white,
+    opacity: 0.7,
+    marginBottom: spacing.xs,
+  },
+  revenueValue: {
+    fontFamily: fontFamily.bold,
+    fontSize: 36,
+    lineHeight: 44,
+    color: colors.primary.yellow,
+  },
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  sectionTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.text.primary,
+    marginBottom: spacing.lg,
+  },
+  monthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+  },
+  monthInfo: {
+    flex: 1,
+  },
+  monthName: {
+    fontFamily: fontFamily.medium,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.text.primary,
+  },
+  monthOrders: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  monthRevenue: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.text.primary,
+  },
+  productCard: {
+    marginBottom: spacing.sm,
+  },
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary.yellowLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  rankText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 13,
+    color: colors.text.primary,
+  },
+  productInfo: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  productName: {
+    fontFamily: fontFamily.medium,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.text.primary,
+  },
+  productSold: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  productRevenue: {
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.status.success,
+  },
+  emptyText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.light,
+    textAlign: 'center',
+    paddingVertical: spacing.xl,
+  },
+});
