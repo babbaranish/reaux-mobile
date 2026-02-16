@@ -95,8 +95,13 @@ export interface DietPlan {
   followers: string[];
   likes: string[];
   tags: string[];
+  likesCount: number;
+  followersCount: number;
   createdAt: string;
   updatedAt: string;
+  // Runtime properties from API responses
+  isLiked?: boolean;  // From like/unlike API
+  isFollowed?: boolean;  // From follow/unfollow API (backend returns this)
 }
 
 // Post

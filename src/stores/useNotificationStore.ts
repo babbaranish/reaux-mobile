@@ -21,7 +21,7 @@ interface NotificationState {
   refreshNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
-  getUnreadCount: () => void;
+  getUnreadCount: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -105,10 +105,29 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
-  getUnreadCount: () => {
-    const { notifications } = get();
-    const unreadCount = notifications.filter((n) => !n.isRead).length;
-    set({ unreadCount });
+  getUnreadCount: async () => {
+    const state = get();
+
+    // If notifications haven't been fetched yet, fetch them first
+    if (state.notifications.length === 0 && !state.isLoading) {
+      try {
+        const response = await notificationsApi.list({ page: 1, limit: 20 });
+        set({
+          notifications: response.data,
+          pagination: response.pagination,
+        });
+        // Calculate unread count from fetched notifications
+        const unreadCount = response.data.filter((n) => !n.isRead).length;
+        set({ unreadCount });
+      } catch (err: any) {
+        // On error, just set unread count to 0
+        set({ unreadCount: 0 });
+      }
+    } else {
+      // Calculate unread count from existing notifications
+      const unreadCount = state.notifications.filter((n) => !n.isRead).length;
+      set({ unreadCount });
+    }
   },
 
   clearError: () => set({ error: null }),

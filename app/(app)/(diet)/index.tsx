@@ -21,8 +21,6 @@ import { useRefreshOnFocus } from '../../../src/hooks/useRefreshOnFocus';
 import { colors, fontFamily, typography, spacing, borderRadius } from '../../../src/theme';
 import type { DietCategory, DietPlan } from '../../../src/types/models';
 
-type Tab = 'diets' | 'steroids';
-
 const CATEGORIES: { label: string; value: DietCategory | undefined }[] = [
   { label: 'All', value: undefined },
   { label: 'Weight Loss', value: 'weight-loss' },
@@ -33,7 +31,6 @@ const CATEGORIES: { label: string; value: DietCategory | undefined }[] = [
 ];
 
 export default function DietScreen() {
-  const [activeTab, setActiveTab] = useState<Tab>('diets');
   const [selectedCategory, setSelectedCategory] = useState<DietCategory | undefined>(undefined);
 
   const user = useAuthStore((s) => s.user);
@@ -107,31 +104,7 @@ export default function DietScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Tab switcher */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'diets' && styles.activeTab]}
-            onPress={() => setActiveTab('diets')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabText, activeTab === 'diets' && styles.activeTabText]}>
-              Diets
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'steroids' && styles.activeTab]}
-            onPress={() => setActiveTab('steroids')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabText, activeTab === 'steroids' && styles.activeTabText]}>
-              Steroids
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {activeTab === 'diets' ? (
-          <>
-            {/* Category filter */}
+        {/* Category filter */}
             <View style={styles.categoryRow}>
               <FlashList
                 data={CATEGORIES}
@@ -199,16 +172,6 @@ export default function DietScreen() {
                 }
               />
             </View>
-          </>
-        ) : (
-          <View style={styles.comingSoon}>
-            <EmptyState
-              icon="flask-outline"
-              title="Coming Soon"
-              message="Steroid information and guides will be available soon."
-            />
-          </View>
-        )}
       </View>
     </SafeScreen>
   );
@@ -252,32 +215,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.text.primary,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
-    backgroundColor: colors.border.light,
-    borderRadius: borderRadius.pill,
-    padding: 3,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm + 2,
-    alignItems: 'center',
-    borderRadius: borderRadius.pill,
-  },
-  activeTab: {
-    backgroundColor: colors.background.dark,
-  },
-  tabText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.secondary,
-  },
-  activeTabText: {
-    color: colors.text.white,
-  },
   categoryRow: {
     height: 40,
     marginBottom: spacing.md,
@@ -318,8 +255,5 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
-  },
-  comingSoon: {
-    flex: 1,
   },
 });

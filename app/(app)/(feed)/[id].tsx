@@ -22,6 +22,7 @@ import { CommentCard } from '../../../src/components/cards/CommentCard';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { postsApi } from '../../../src/api/endpoints/posts';
 import { useFeedStore } from '../../../src/stores/useFeedStore';
+import { useAuthStore } from '../../../src/stores/useAuthStore';
 import { formatRelative, formatNumber } from '../../../src/utils/formatters';
 import {
   colors,
@@ -35,6 +36,7 @@ import type { Post, Comment, User, Role } from '../../../src/types/models';
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
   const likePost = useFeedStore((s) => s.likePost);
 
   const [post, setPost] = useState<Post | null>(null);
@@ -122,6 +124,11 @@ export default function PostDetailScreen() {
   const authorRole = author?.role as Role | undefined;
   const hasImage = post.mediaType === 'image' && post.mediaUrl;
 
+  // Check if current user has liked this post
+  const isLiked = user && post.isLiked !== undefined
+    ? post.isLiked
+    : user && post.likes?.includes(user._id);
+
   const renderHeader = () => (
     <View>
       {/* Post image */}
@@ -177,10 +184,10 @@ export default function PostDetailScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons
-            name={post.likes?.includes('me') ? 'heart' : 'heart-outline'}
+            name={isLiked ? 'heart' : 'heart-outline'}
             size={24}
             color={
-              post.likes?.includes('me')
+              isLiked
                 ? colors.status.error
                 : colors.text.secondary
             }

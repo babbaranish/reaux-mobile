@@ -86,8 +86,10 @@ export default function DietPlanDetailScreen() {
       : null;
   const categoryInfo =
     categoryBadgeVariant[selectedPlan.category] || categoryBadgeVariant.other;
-  const isFollowing = user ? selectedPlan.followers?.includes(user._id) : false;
-  const isLiked = user ? selectedPlan.likes?.includes(user._id) : false;
+
+  // Use boolean flags from API response
+  const isFollowing = selectedPlan.isFollowed ?? false;
+  const isLiked = selectedPlan.isLiked ?? false;
 
   // Compute macro totals from meals
   const macros = (selectedPlan.meals ?? []).reduce(
@@ -172,7 +174,7 @@ export default function DietPlanDetailScreen() {
                 color={isLiked ? colors.status.error : colors.text.primary}
               />
               <Text style={styles.actionText}>
-                {selectedPlan.likes?.length ?? 0} {(selectedPlan.likes?.length ?? 0) === 1 ? 'Like' : 'Likes'}
+                {selectedPlan.likesCount ?? 0} {(selectedPlan.likesCount ?? 0) === 1 ? 'Like' : 'Likes'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -186,7 +188,7 @@ export default function DietPlanDetailScreen() {
                 color={isFollowing ? colors.primary.yellowDark : colors.text.primary}
               />
               <Text style={styles.actionText}>
-                {isFollowing ? 'Following' : 'Follow'}
+                {selectedPlan.followersCount ?? 0} {isFollowing ? 'Following' : 'Followers'}
               </Text>
             </TouchableOpacity>
           </View>

@@ -100,11 +100,11 @@ export const DietPlanCard: React.FC<DietPlanCardProps> = ({ plan, onPress }) => 
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Ionicons name="heart" size={14} color={colors.status.error} />
-            <Text style={styles.statText}>{formatNumber(plan.likes?.length ?? 0)}</Text>
+            <Text style={styles.statText}>{formatNumber(plan.likesCount ?? 0)}</Text>
           </View>
           <View style={styles.stat}>
             <Ionicons name="people" size={14} color={colors.text.secondary} />
-            <Text style={styles.statText}>{formatNumber(plan.followers?.length ?? 0)}</Text>
+            <Text style={styles.statText}>{formatNumber(plan.followersCount ?? 0)}</Text>
           </View>
           {plan.totalCalories ? (
             <View style={styles.stat}>
