@@ -47,9 +47,10 @@ const formatDiscount = (promo: PromoCode) => {
 
 interface PromoCardProps {
   promo: PromoCode;
+  onEdit: () => void;
 }
 
-const PromoCard: React.FC<PromoCardProps> = ({ promo }) => {
+const PromoCard: React.FC<PromoCardProps> = ({ promo, onEdit }) => {
   const status = getPromoStatus(promo);
   const config = statusConfig[status];
 
@@ -60,7 +61,12 @@ const PromoCard: React.FC<PromoCardProps> = ({ promo }) => {
           <Ionicons name="pricetag-outline" size={16} color={colors.primary.yellowDark} />
           <Text style={styles.codeText}>{promo.code}</Text>
         </View>
-        <Badge text={config.text} variant={config.variant} size="sm" />
+        <View style={styles.cardHeaderRight}>
+          <Badge text={config.text} variant={config.variant} size="sm" />
+          <TouchableOpacity onPress={onEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="create-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.discountRow}>
@@ -156,8 +162,15 @@ export default function PastPromosScreen() {
     router.push('/(app)/(admin)/promo/create');
   };
 
+  const handleEdit = useCallback((promo: PromoCode) => {
+    router.push({
+      pathname: '/(app)/(admin)/promo/edit',
+      params: { id: promo._id },
+    } as any);
+  }, [router]);
+
   const renderPromoItem = ({ item }: { item: PromoCode }) => (
-    <PromoCard promo={item} />
+    <PromoCard promo={item} onEdit={() => handleEdit(item)} />
   );
 
   return (
@@ -230,6 +243,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.sm,
+  },
+  cardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   codeContainer: {
     flexDirection: 'row',

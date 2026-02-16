@@ -9,6 +9,7 @@ export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'c
 export type ChallengeType = 'steps' | 'workout' | 'diet' | 'custom';
 export type NotificationType = 'system' | 'order' | 'challenge' | 'community' | 'diet';
 export type DiscountType = 'percentage' | 'fixed';
+export type MembershipStatus = 'active' | 'expired' | 'cancelled';
 
 // User
 export interface User {
@@ -269,4 +270,33 @@ export interface SalesReport {
   totalRevenue: number;
   monthlyBreakdown: Array<{ month: string; revenue: number; orders: number }>;
   topProducts: Array<{ product: Product; totalSold: number; revenue: number }>;
+}
+
+// Membership Plan
+export interface MembershipPlan {
+  _id: string;
+  name: string;
+  gymId: string | Gym;
+  durationDays: number; // 30, 90, 180, 365
+  price: number;
+  features?: string[];
+  description?: string;
+  isActive: boolean;
+  createdBy: string | User;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Membership
+export interface Membership {
+  _id: string;
+  userId: string | User;
+  planId: string | MembershipPlan;
+  gymId: string | Gym;
+  startDate: string;
+  endDate: string;
+  status: MembershipStatus;
+  assignedBy: string | User;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { Input } from '../../../src/components/ui/Input';
 import { Button } from '../../../src/components/ui/Button';
 import { Card } from '../../../src/components/ui/Card';
 import { useAuthStore } from '../../../src/stores/useAuthStore';
+import { useNotificationStore } from '../../../src/stores/useNotificationStore';
 import { useImagePicker } from '../../../src/hooks/useImagePicker';
 import {
   colors,
@@ -33,6 +34,8 @@ export default function ProfileScreen() {
   const uploadAvatarAction = useAuthStore((s) => s.uploadAvatar);
   const isLoading = useAuthStore((s) => s.isLoading);
   const logout = useAuthStore((s) => s.logout);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const getUnreadCount = useNotificationStore((s) => s.getUnreadCount);
   const { pickImage } = useImagePicker();
 
   const [name, setName] = useState(user?.name || '');
@@ -41,6 +44,11 @@ export default function ProfileScreen() {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const gym = typeof user?.gymId === 'object' ? (user.gymId as Gym) : null;
+
+  // Fetch unread notification count on mount
+  useEffect(() => {
+    getUnreadCount();
+  }, [getUnreadCount]);
 
   const handleNameChange = useCallback(
     (value: string) => {
@@ -208,35 +216,6 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Admin: Fees Overview */}
-        {isAdmin && (
-          <Card
-            style={styles.linkCard}
-            onPress={() => router.push('/(app)/(admin)/fees')}
-          >
-            <View style={styles.linkCardContent}>
-              <View style={styles.linkCardLeft}>
-                <Ionicons
-                  name="cash-outline"
-                  size={22}
-                  color={colors.text.primary}
-                />
-                <View style={styles.linkCardText}>
-                  <Text style={styles.linkCardTitle}>Fees Overview</Text>
-                  <Text style={styles.linkCardSubtitle}>
-                    View gym membership fees
-                  </Text>
-                </View>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.text.light}
-              />
-            </View>
-          </Card>
-        )}
-
         {/* Admin Panel */}
         {isAdmin && (
           <Card
@@ -294,6 +273,67 @@ export default function ProfileScreen() {
             </View>
           </Card>
         )}
+
+        {/* Fees & Memberships */}
+        <Card
+          style={styles.linkCard}
+          onPress={() => router.push('/(app)/(admin)/fees')}
+        >
+          <View style={styles.linkCardContent}>
+            <View style={styles.linkCardLeft}>
+              <Ionicons
+                name="cash-outline"
+                size={22}
+                color={colors.text.primary}
+              />
+              <View style={styles.linkCardText}>
+                <Text style={styles.linkCardTitle}>Fees & Memberships</Text>
+                <Text style={styles.linkCardSubtitle}>
+                  View gym fees and your memberships
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.text.light}
+            />
+          </View>
+        </Card>
+
+        {/* Notifications */}
+        <Card
+          style={styles.linkCard}
+          onPress={() => router.push('/(app)/(profile)/notifications')}
+        >
+          <View style={styles.linkCardContent}>
+            <View style={styles.linkCardLeft}>
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color={colors.text.primary}
+              />
+              <View style={styles.linkCardText}>
+                <Text style={styles.linkCardTitle}>Notifications</Text>
+                <Text style={styles.linkCardSubtitle}>
+                  View all your notifications
+                </Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.text.light}
+              />
+            </View>
+          </View>
+        </Card>
 
         {/* Save Changes Button */}
         {hasChanges && (
@@ -400,6 +440,21 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: colors.text.secondary,
     marginTop: 2,
+  },
+  notificationBadge: {
+    backgroundColor: colors.status.error,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  notificationBadgeText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    lineHeight: 14,
+    color: colors.text.white,
   },
   saveButtonContainer: {
     marginTop: spacing.lg,

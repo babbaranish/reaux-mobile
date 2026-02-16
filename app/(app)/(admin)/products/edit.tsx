@@ -131,11 +131,14 @@ export default function EditProductScreen() {
         // Use FormData when new images are being uploaded
         const form = new FormData();
         newImageUris.forEach((uri, idx) => {
-          form.append('images', {
-            uri,
-            type: 'image/jpeg',
-            name: `product_${idx}.jpg`,
-          } as any);
+          if (uri) {
+            const imageFile: any = {
+              uri,
+              type: 'image/jpeg',
+              name: `product_${idx}.jpg`,
+            };
+            form.append('images', imageFile);
+          }
         });
         form.append('name', name.trim());
         form.append('price', price);
@@ -169,8 +172,10 @@ export default function EditProductScreen() {
       Alert.alert('Success', 'Product updated successfully', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to update product');
+    } catch (error: any) {
+      console.error('Error updating product:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to update product';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }

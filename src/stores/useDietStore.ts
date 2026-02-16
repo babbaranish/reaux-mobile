@@ -13,12 +13,15 @@ interface DietPagination {
 interface DietState {
   plans: DietPlan[];
   selectedPlan: DietPlan | null;
+  suggestedPlans: DietPlan[];
   isLoading: boolean;
   error: string | null;
   pagination: DietPagination;
+  suggestedPagination: DietPagination;
 
   fetchPlans: (page?: number, category?: DietCategory) => Promise<void>;
   getPlanById: (id: string) => Promise<void>;
+  fetchSuggestedPlans: (page?: number) => Promise<void>;
   followPlan: (id: string) => Promise<void>;
   likePlan: (id: string) => Promise<void>;
   createPlan: (data: CreateDietRequest | FormData) => Promise<void>;
@@ -30,9 +33,11 @@ interface DietState {
 export const useDietStore = create<DietState>((set, get) => ({
   plans: [],
   selectedPlan: null,
+  suggestedPlans: [],
   isLoading: false,
   error: null,
   pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+  suggestedPagination: { page: 1, limit: 10, total: 0, pages: 0 },
 
   fetchPlans: async (page = 1, category?) => {
     set({ isLoading: true, error: null });
@@ -61,6 +66,24 @@ export const useDietStore = create<DietState>((set, get) => ({
     } catch (err: any) {
       set({
         error: err.message || 'Failed to fetch diet plan',
+        isLoading: false,
+      });
+    }
+  },
+
+  fetchSuggestedPlans: async (page = 1) => {
+    set({ isLoading: true, error: null });
+    try {
+      const params = { page, limit: 10 };
+      const response = await dietsApi.getSuggested(params);
+      set({
+        suggestedPlans: page === 1 ? response.data : [...get().suggestedPlans, ...response.data],
+        suggestedPagination: response.pagination,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      set({
+        error: err.message || 'Failed to fetch suggested diet plans',
         isLoading: false,
       });
     }

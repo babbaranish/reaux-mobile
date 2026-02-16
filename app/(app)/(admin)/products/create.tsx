@@ -92,11 +92,14 @@ export default function CreateProductScreen() {
         // Upload images via a FormData request to products endpoint
         const form = new FormData();
         imageUris.forEach((uri, idx) => {
-          form.append('images', {
-            uri,
-            type: 'image/jpeg',
-            name: `product_${idx}.jpg`,
-          } as any);
+          if (uri) {
+            const imageFile: any = {
+              uri,
+              type: 'image/jpeg',
+              name: `product_${idx}.jpg`,
+            };
+            form.append('images', imageFile);
+          }
         });
         form.append('name', name.trim());
         form.append('price', price);
@@ -130,8 +133,10 @@ export default function CreateProductScreen() {
       Alert.alert('Success', 'Product created successfully', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create product');
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to create product';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }

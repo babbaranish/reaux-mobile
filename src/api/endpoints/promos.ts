@@ -12,4 +12,10 @@ export const promosApi = {
 
   validate: (code: string) =>
     client.post<ApiResponse<PromoCode>>('/promo/validate', { code }).then(r => r.data),
+
+  getById: (id: string) =>
+    client.get<ApiResponse<PromoCode>>(`/promo/${id}`).then(r => r.data),
+
+  update: (id: string, data: Partial<CreatePromoRequest>) =>
+    client.put<ApiResponse<PromoCode>>(`/promo/${id}`, data).then(r => r.data),
 };

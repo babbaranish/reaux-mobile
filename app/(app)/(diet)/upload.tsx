@@ -67,7 +67,7 @@ export default function UploadDietScreen() {
     if (dinner.trim()) meals.push({ name: 'Dinner', items: parseMealText(dinner) });
 
     try {
-      if (image) {
+      if (image && image.uri) {
         const form = new FormData();
         form.append('title', title.trim());
         form.append('category', category);
@@ -75,11 +75,15 @@ export default function UploadDietScreen() {
         if (calories) form.append('totalCalories', calories);
         if (meals.length > 0) form.append('meals', JSON.stringify(meals));
         form.append('isPublished', 'false');
-        form.append('image', {
+
+        // React Native FormData requires proper typing
+        const imageFile: any = {
           uri: image.uri,
-          type: image.type,
-          name: image.fileName,
-        } as any);
+          type: image.type || 'image/jpeg',
+          name: image.fileName || `diet-${Date.now()}.jpg`,
+        };
+        form.append('image', imageFile);
+
         await createPlan(form);
       } else {
         await createPlan({
@@ -94,8 +98,10 @@ export default function UploadDietScreen() {
       Alert.alert('Success', 'Diet plan created successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch {
-      Alert.alert('Error', 'Failed to create diet plan. Please try again.');
+    } catch (error: any) {
+      console.error('Create diet plan error:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to create diet plan';
+      Alert.alert('Error', errorMessage);
     }
   }, [title, category, description, calories, breakfast, lunch, snacks, dinner, image, createPlan]);
 

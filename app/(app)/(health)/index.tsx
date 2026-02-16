@@ -329,18 +329,18 @@ export default function HealthScreen() {
         )}
 
         {/* Personalized diet plan suggestion */}
-        {result && result.category !== 'normal' && (
+        {result && (
           <TouchableOpacity
             style={[styles.dietSuggestionCard, shadows.card]}
-            onPress={() => router.push('/(app)/(diet)/')}
+            onPress={() => router.push('/(app)/(diet)/suggested' as any)}
             activeOpacity={0.7}
           >
             <View style={styles.dietSuggestionContent}>
               <Ionicons name="restaurant" size={24} color={colors.primary.yellowDark} />
               <View style={styles.dietSuggestionTextBlock}>
-                <Text style={styles.dietSuggestionTitle}>Personalized Diet Plan</Text>
+                <Text style={styles.dietSuggestionTitle}>View Suggested Diets</Text>
                 <Text style={styles.dietSuggestionSubtitle}>
-                  Find a diet plan tailored to your goals
+                  Diet plans tailored to your BMI ({result.bmi.toFixed(1)} - {BMI_CATEGORY_CONFIG[result.category].label})
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text.light} />

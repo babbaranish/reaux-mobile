@@ -36,6 +36,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { token: authToken, user } = response.data;
       await setToken(authToken);
       set({ user: user as unknown as User, token: authToken, isAuthenticated: true, isLoading: false });
+
+      // Register device token immediately after login
+      try {
+        const { getPushNotificationToken } = await import('../services/notifications');
+        const { notificationsApi } = await import('../api/endpoints/notifications');
+        const pushToken = await getPushNotificationToken();
+        if (pushToken) {
+          await notificationsApi.registerDeviceToken(pushToken);
+          console.log('✅ Device token registered after login');
+        }
+      } catch (tokenError) {
+        console.error('Failed to register device token after login:', tokenError);
+        // Don't fail login if token registration fails
+      }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed';
       set({ error: message, isLoading: false });
@@ -50,6 +64,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { token: authToken, user } = response.data;
       await setToken(authToken);
       set({ user: user as unknown as User, token: authToken, isAuthenticated: true, isLoading: false });
+
+      // Register device token immediately after registration
+      try {
+        const { getPushNotificationToken } = await import('../services/notifications');
+        const { notificationsApi } = await import('../api/endpoints/notifications');
+        const pushToken = await getPushNotificationToken();
+        if (pushToken) {
+          await notificationsApi.registerDeviceToken(pushToken);
+          console.log('✅ Device token registered after registration');
+        }
+      } catch (tokenError) {
+        console.error('Failed to register device token after registration:', tokenError);
+        // Don't fail registration if token registration fails
+      }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Registration failed';
       set({ error: message, isLoading: false });

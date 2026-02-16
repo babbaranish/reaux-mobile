@@ -68,18 +68,22 @@ export default function CreateGymScreen() {
       if (hasMedia) {
         const form = new FormData();
         imageUris.forEach((uri, idx) => {
-          form.append('images', {
-            uri,
-            type: 'image/jpeg',
-            name: `gym_${idx}.jpg`,
-          } as any);
+          if (uri) {
+            const imageFile: any = {
+              uri,
+              type: 'image/jpeg',
+              name: `gym_${idx}.jpg`,
+            };
+            form.append('images', imageFile);
+          }
         });
         if (logoUri) {
-          form.append('logo', {
+          const logoFile: any = {
             uri: logoUri,
             type: 'image/jpeg',
             name: 'gym_logo.jpg',
-          } as any);
+          };
+          form.append('logo', logoFile);
         }
         form.append('name', name.trim());
         if (description.trim()) form.append('description', description.trim());
@@ -121,8 +125,10 @@ export default function CreateGymScreen() {
       Alert.alert('Success', 'Gym created successfully', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create gym');
+    } catch (error: any) {
+      console.error('Error creating gym:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to create gym';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }

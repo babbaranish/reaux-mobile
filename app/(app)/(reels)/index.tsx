@@ -9,7 +9,7 @@ import {
   ViewToken,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../../../src/components/layout/SafeScreen';
 import { ReelCard } from '../../../src/components/cards/ReelCard';
@@ -39,6 +39,17 @@ export default function ReelsScreen() {
   useEffect(() => {
     fetchReels(1);
   }, []);
+
+  // Pause all videos when navigating away from reels screen
+  useFocusEffect(
+    useCallback(() => {
+      // Screen is focused - do nothing special
+      return () => {
+        // Screen is unfocused - pause all videos
+        setVisibleId(null);
+      };
+    }, [])
+  );
 
   const handleRefresh = useCallback(() => {
     refreshReels();

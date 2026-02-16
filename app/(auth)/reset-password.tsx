@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,70 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../../src/components/layout/SafeScreen';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
-import { forgotPassword } from '../../src/api/endpoints/auth';
+import { resetPassword } from '../../src/api/endpoints/auth';
 import { useUIStore } from '../../src/stores/useUIStore';
-import { colors, fontFamily, spacing, borderRadius } from '../../src/theme';
+import { colors, fontFamily, spacing } from '../../src/theme';
 
-export default function ForgotPasswordScreen() {
-  const [email, setEmail] = useState('');
+export default function ResetPasswordScreen() {
+  const { token } = useLocalSearchParams<{ token?: string }>();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const showToast = useUIStore((s) => s.showToast);
 
-  const handleSend = async () => {
-    if (!email.trim()) {
-      showToast('Please enter your email', 'error');
+  useEffect(() => {
+    if (!token) {
+      setError('Invalid or missing reset token. Please request a new password reset link.');
+    }
+  }, [token]);
+
+  const handleReset = async () => {
+    setError('');
+
+    if (!newPassword || !confirmPassword) {
+      setError('Please fill in all fields');
       return;
     }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (!token) {
+      setError('Invalid reset token');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await forgotPassword(email.trim());
-      setSent(true);
+      await resetPassword(token, newPassword);
+      setSuccess(true);
+      showToast('Password reset successful!', 'success');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Something went wrong';
+      const msg = err.response?.data?.message || 'Failed to reset password';
+      setError(msg);
       showToast(msg, 'error');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBackToLogin = () => {
+    router.replace('/(auth)/login');
   };
 
   return (
@@ -70,24 +103,39 @@ export default function ForgotPasswordScreen() {
             </View>
             <Text style={styles.heading}>Reset Password</Text>
             <Text style={styles.subtext}>
-              Enter your email and we'll send you a link to reset your password.
+              Enter your new password below.
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.formSection}>
-            {sent ? (
+            {success ? (
               <View style={styles.successContainer}>
                 <View style={styles.successIcon}>
-                  <Ionicons name="mail-outline" size={40} color={colors.primary.yellow} />
+                  <Ionicons name="checkmark-circle" size={40} color={colors.status.success} />
                 </View>
-                <Text style={styles.successTitle}>Check your email</Text>
+                <Text style={styles.successTitle}>Password Reset!</Text>
                 <Text style={styles.successMessage}>
-                  We sent a password reset link to {email}. Please check your inbox and click the link to reset your password.
+                  Your password has been successfully reset. You can now log in with your new password.
                 </Text>
                 <Button
-                  title="Back to Login"
-                  onPress={() => router.replace('/(auth)/login')}
+                  title="Go to Login"
+                  onPress={handleBackToLogin}
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                />
+              </View>
+            ) : error && !token ? (
+              <View style={styles.errorContainer}>
+                <View style={styles.errorIcon}>
+                  <Ionicons name="alert-circle" size={40} color={colors.status.error} />
+                </View>
+                <Text style={styles.errorTitle}>Invalid Link</Text>
+                <Text style={styles.errorMessage}>{error}</Text>
+                <Button
+                  title="Request New Link"
+                  onPress={() => router.replace('/(auth)/forgot-password')}
                   variant="primary"
                   size="lg"
                   fullWidth
@@ -96,17 +144,30 @@ export default function ForgotPasswordScreen() {
             ) : (
               <>
                 <Input
-                  label="EMAIL"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                  label="NEW PASSWORD"
+                  placeholder="Enter new password (min. 6 characters)"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                  error={error && error.includes('Password') ? error : undefined}
                 />
 
+                <Input
+                  label="CONFIRM PASSWORD"
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  error={error && error.includes('match') ? error : undefined}
+                />
+
+                {error && !error.includes('Password') && !error.includes('match') && (
+                  <Text style={styles.errorText}>{error}</Text>
+                )}
+
                 <Button
-                  title="Send Reset Link  \u2192"
-                  onPress={handleSend}
+                  title="Reset Password  →"
+                  onPress={handleReset}
                   variant="primary"
                   size="lg"
                   fullWidth
@@ -115,13 +176,11 @@ export default function ForgotPasswordScreen() {
                 />
 
                 <View style={styles.backRow}>
-                  <Link href="/(auth)/login" asChild>
-                    <TouchableOpacity>
-                      <Text style={styles.backLink}>
-                        {'\u2190'} Back to Login
-                      </Text>
-                    </TouchableOpacity>
-                  </Link>
+                  <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
+                    <Text style={styles.backLink}>
+                      ← Back to Login
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </>
             )}
@@ -208,6 +267,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.primary,
   },
+  errorText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.status.error,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
   successContainer: {
     alignItems: 'center',
     paddingTop: spacing.xxxl,
@@ -228,6 +294,33 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   successMessage: {
+    fontFamily: fontFamily.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xxxl,
+  },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fee',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  errorTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 22,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  errorMessage: {
     fontFamily: fontFamily.regular,
     fontSize: 15,
     lineHeight: 22,

@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Slot } from 'expo-router';
+import { Slot, useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import * as ScreenCapture from 'expo-screen-capture';
+import * as Linking from 'expo-linking';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { Toast } from '../src/components/ui/Toast';
+import { useNotifications } from '../src/hooks/useNotifications';
 
 // Keep splash visible while we load fonts and restore auth
 SplashScreen.preventAutoHideAsync();
@@ -15,6 +17,10 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const isRestoring = useAuthStore((s) => s.isRestoring);
+  const router = useRouter();
+
+  // Initialize push notifications
+  useNotifications();
 
   const [fontsLoaded, fontError] = useFonts({
     'SplineSans-Regular': require('../assets/fonts/SplineSans-Regular.ttf'),
@@ -27,6 +33,38 @@ export default function RootLayout() {
     // Ensure screenshots and screen recording are allowed
     ScreenCapture.allowScreenCaptureAsync();
   }, []);
+
+  // Handle deep links for password reset
+  useEffect(() => {
+    const handleDeepLink = (url: string) => {
+      const parsed = Linking.parse(url);
+
+      // Handle reset-password deep link: reauxlabs://reset-password?token=xxx
+      if (parsed.path === 'reset-password' && parsed.queryParams?.token) {
+        const token = parsed.queryParams.token as string;
+        router.push({
+          pathname: '/(auth)/reset-password',
+          params: { token },
+        } as any);
+      }
+    };
+
+    // Handle initial URL (app opened via link)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Handle URL while app is running
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router]);
 
   useEffect(() => {
     if ((fontsLoaded || fontError) && !isRestoring) {

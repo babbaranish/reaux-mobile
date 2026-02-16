@@ -55,6 +55,22 @@ export default function AdminDashboardScreen() {
             </View>
           )}
 
+          {/* Memberships */}
+          <View style={styles.navigationSection}>
+            <Text style={styles.sectionTitle}>Memberships</Text>
+            <View style={styles.menuCard}>
+              <MenuItem
+                label="Membership Plans"
+                onPress={() => router.push('/(app)/(admin)/memberships/plans')}
+              />
+              <View style={styles.divider} />
+              <MenuItem
+                label="User Memberships"
+                onPress={() => router.push('/(app)/(admin)/memberships/memberships')}
+              />
+            </View>
+          </View>
+
           {/* Shop Management */}
           <View style={styles.navigationSection}>
             <Text style={styles.sectionTitle}>Shop</Text>
@@ -107,8 +123,8 @@ export default function AdminDashboardScreen() {
             </View>
           </View>
 
-          {/* Policies Section */}
-          <View style={styles.navigationSection}>
+          {/* Legal Section - Hidden for now */}
+          {/* <View style={styles.navigationSection}>
             <Text style={styles.sectionTitle}>Legal</Text>
             <View style={styles.menuCard}>
               <MenuItem
@@ -131,7 +147,7 @@ export default function AdminDashboardScreen() {
                 onPress={() => {}}
               />
             </View>
-          </View>
+          </View> */}
         </ScrollView>
       </SafeScreen>
     </RoleGuard>

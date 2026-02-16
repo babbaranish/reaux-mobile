@@ -44,6 +44,15 @@ export const ReelCard: React.FC<ReelCardProps> = ({ reel, isVisible, onLike, hei
     } catch {
       // Player may not be ready yet
     }
+
+    // Cleanup: pause video when component unmounts
+    return () => {
+      try {
+        player.pause();
+      } catch {
+        // Player may not be available
+      }
+    };
   }, [isVisible, player]);
 
   useEffect(() => {

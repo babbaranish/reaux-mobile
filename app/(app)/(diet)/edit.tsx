@@ -124,7 +124,7 @@ export default function EditDietScreen() {
     if (dinner.trim()) meals.push({ name: 'Dinner', items: parseMealText(dinner) });
 
     try {
-      if (image) {
+      if (image && image.uri) {
         // New image selected -- use FormData
         const form = new FormData();
         form.append('title', title.trim());
@@ -132,11 +132,15 @@ export default function EditDietScreen() {
         if (description.trim()) form.append('description', description.trim());
         if (calories) form.append('totalCalories', calories);
         if (meals.length > 0) form.append('meals', JSON.stringify(meals));
-        form.append('image', {
+
+        // React Native FormData requires proper typing
+        const imageFile: any = {
           uri: image.uri,
-          type: image.type,
-          name: image.fileName,
-        } as any);
+          type: image.type || 'image/jpeg',
+          name: image.fileName || `diet-${Date.now()}.jpg`,
+        };
+        form.append('image', imageFile);
+
         await updatePlan(id, form);
       } else {
         // No new image -- use JSON
@@ -152,8 +156,10 @@ export default function EditDietScreen() {
       Alert.alert('Success', 'Diet plan updated successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch {
-      Alert.alert('Error', 'Failed to update diet plan. Please try again.');
+    } catch (error: any) {
+      console.error('Update diet plan error:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to update diet plan';
+      Alert.alert('Error', errorMessage);
     }
   }, [id, title, category, description, calories, breakfast, lunch, snacks, dinner, image, existingImage, updatePlan]);
 

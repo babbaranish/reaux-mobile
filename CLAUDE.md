@@ -274,6 +274,145 @@ Notification { _id, userId, title, message, type, isRead }
 
 ---
 
+## Implementation Status & Missing Features
+
+This section tracks which API features (as defined in the backend API documentation) are implemented in the mobile app vs. what's missing or incomplete.
+
+### ✅ Fully Implemented Features
+
+**Authentication & Profile**
+- Login/Register with JWT
+- Get current user profile
+- Update profile (name, phone, height, weight, DOB, gender)
+- Avatar upload
+
+**Social Feed & Community**
+- List posts with pagination, category/hashtag filters
+- View post detail with comments
+- Create posts (text, image, hashtags, category)
+- Like/unlike posts (optimistic updates)
+- Add comments to posts
+- Full comment display with author info, timestamps
+
+**Reels (Short Videos)**
+- List reels with pagination
+- Like/unlike reels
+- Create reels (video upload, caption, linked product)
+- Full-screen vertical video player
+
+**Diet Plans**
+- List diet plans with category filters
+- View diet plan detail (meals, macros, tags)
+- Create/edit diet plans (admin)
+- Follow/unfollow diet plans
+- Like/unlike diet plans
+- Meal-level detail with nutrition info
+
+**BMI Tracking**
+- Record BMI (height/weight input with sliders)
+- View BMI history with chart
+- Get latest BMI with category (underweight/normal/overweight/obese)
+- Historical trend visualization
+
+**E-Commerce (Shop)**
+- List products with search, category filters
+- View product detail
+- Add to cart, update quantities
+- View cart with totals
+- Create orders with shipping address
+- Apply promo codes at checkout
+- View order history with status filters
+- View order detail/invoice
+
+**Challenges**
+- List challenges
+- Join challenges
+- View challenge participants and progress
+- Create challenges (admin)
+
+**Admin Features**
+- Platform analytics (user counts, posts, orders, products)
+- Sales reports (revenue, monthly breakdown, top products)
+- User management (list, view, update role/status) - superadmin
+- Gym management (CRUD) - superadmin
+- Product management (CRUD)
+- Order management (list, view, update status)
+- Promo code creation
+- Challenge creation
+
+### ⚠️ Partially Implemented Features
+
+**In-App Notifications** (70% complete)
+- ✅ API endpoints: list, mark as read, mark all as read
+- ✅ NotificationStore with pagination, unread counts
+- ✅ NotificationCard component
+- ✅ Full notifications screen with tabs (All/Unread/Activity)
+- ❌ **Notifications screen is admin-only** - regular users cannot access
+- ❌ **No notification bell/badge in app** - no user-facing entry point
+- ❌ **No FCM/push notification integration** - no device token registration
+- **Fix needed**: Move notifications to user-accessible location (profile or tab bar), add FCM
+
+**Password Reset Flow** (50% complete)
+- ✅ Forgot password screen (email input, sends reset link)
+- ✅ API endpoint for forgot-password
+- ✅ API endpoint for reset-password (accepts token + new password)
+- ❌ **No reset password screen** - nowhere to enter new password after clicking email link
+- ❌ **No deep link handling** - app doesn't respond to password reset email links
+- **Fix needed**: Create reset-password screen, configure deep linking (e.g., `reaux-labs://reset-password?token=xxx`)
+
+**Promo Code Management** (60% complete)
+- ✅ Create promo screen (admin)
+- ✅ List/view past promos (admin)
+- ✅ Promo validation (customer-facing, at checkout)
+- ❌ **No edit promo endpoint in API** - cannot update existing promos
+- ❌ **No edit promo screen** - no way to modify created promos
+- **Fix needed**: Add PUT/PATCH endpoint for promo updates, create edit screen
+
+### ❌ Not Implemented Features
+
+**Memberships System** (0% complete)
+- ❌ No API endpoints (`/api/memberships/plans`, `/api/memberships`)
+- ❌ No MembershipStore
+- ❌ No membership screens
+- ❌ No Membership/MembershipPlan data models
+- **Backend API includes**:
+  - Membership plan CRUD (superadmin)
+  - Assign membership to user (admin)
+  - View user memberships
+  - Cancel membership
+  - My memberships (user)
+- **Implementation needed**: Full feature (API client + store + UI flows)
+
+**Diet Suggestions Based on BMI** (0% complete)
+- ❌ No `GET /api/diets/suggested` endpoint called
+- ❌ BMI screen doesn't suggest diets after calculation
+- ❌ No integration between BMI result and diet recommendations
+- **Backend API includes**:
+  - Smart diet suggestions based on BMI category
+  - Calorie range matching (e.g., underweight → muscle-gain 2500-3500 cal)
+  - Fallback logic for no matches
+- **Implementation needed**:
+  - Add `getSuggestedDiets()` to dietsApi
+  - Add action to DietStore
+  - Add "Suggested Diets" button/section on BMI result screen
+  - Create suggested diets screen or modal
+
+### 📋 Implementation Priority Recommendations
+
+**High Priority** (Core user features):
+1. Make notifications accessible to regular users
+2. Complete password reset flow (reset screen + deep linking)
+3. Implement diet suggestions based on BMI
+
+**Medium Priority** (Admin/polish features):
+4. Add promo code editing capability
+5. Implement FCM push notifications
+
+**Low Priority** (Large new feature):
+6. Implement full memberships system (extensive work, many screens)
+
+---
+
 ## Component Quick Reference
 
 | Component | Location | Key Props |
