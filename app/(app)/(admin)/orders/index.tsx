@@ -15,10 +15,13 @@ import { SafeScreen } from '../../../../src/components/layout/SafeScreen';
 import { Header } from '../../../../src/components/layout/Header';
 import { Card } from '../../../../src/components/ui/Card';
 import { Badge } from '../../../../src/components/ui/Badge';
+import { Button } from '../../../../src/components/ui/Button';
 import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { RoleGuard } from '../../../../src/components/guards/RoleGuard';
 import { useOrderStore } from '../../../../src/stores/useOrderStore';
+import { useUIStore } from '../../../../src/stores/useUIStore';
 import { formatCurrency, formatDate } from '../../../../src/utils/formatters';
+import { exportOrdersListPDF, exportSingleOrderPDF } from '../../../../src/utils/pdfExport';
 import { colors, fontFamily, spacing, borderRadius } from '../../../../src/theme';
 import type { Order, OrderStatus } from '../../../../src/types/models';
 
@@ -53,9 +56,12 @@ const FILTER_TABS: { key: StatusFilter; label: string }[] = [
 export default function AdminOrdersScreen() {
   const router = useRouter();
   const { orders, isLoading, isUpdating, fetchAllOrders, updateOrderStatus } = useOrderStore();
+  const showToast = useUIStore((s) => s.showToast);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('all');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportingOrderId, setExportingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllOrders();
@@ -101,6 +107,35 @@ export default function AdminOrdersScreen() {
       return order.userId.name || 'Unknown';
     }
     return 'Customer';
+  };
+
+  const handleExportAllPDF = async () => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      showToast('No orders to export', 'error');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportOrdersListPDF(filteredOrders);
+      showToast('PDF exported successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to export PDF', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportSingleOrder = async (order: Order) => {
+    setExportingOrderId(order._id);
+    try {
+      await exportSingleOrderPDF(order);
+      showToast('Invoice exported successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to export invoice', 'error');
+    } finally {
+      setExportingOrderId(null);
+    }
   };
 
   const filteredOrders = activeFilter === 'all'
@@ -214,6 +249,22 @@ export default function AdminOrdersScreen() {
               </View>
             )}
 
+            {/* Export Invoice Button */}
+            <View style={styles.exportInvoiceSection}>
+              <Button
+                title="Export Invoice"
+                onPress={() => handleExportSingleOrder(item)}
+                variant="outline"
+                size="md"
+                fullWidth
+                loading={exportingOrderId === item._id}
+                disabled={exportingOrderId === item._id}
+                leftIcon={
+                  <Ionicons name="download-outline" size={18} color={colors.text.primary} />
+                }
+              />
+            </View>
+
             {/* Status Update */}
             {availableTransitions.length > 0 ? (
               <View style={styles.statusUpdateSection}>
@@ -310,6 +361,24 @@ export default function AdminOrdersScreen() {
                     }
                   />
                 )
+              }
+              ListFooterComponent={
+                filteredOrders.length > 0 ? (
+                  <View style={styles.exportButtonContainer}>
+                    <Button
+                      title="Export as PDF"
+                      onPress={handleExportAllPDF}
+                      variant="secondary"
+                      size="lg"
+                      fullWidth
+                      loading={isExporting}
+                      disabled={isExporting}
+                      leftIcon={
+                        <Ionicons name="document-text-outline" size={20} color={colors.text.white} />
+                      }
+                    />
+                  </View>
+                ) : null
               }
               extraData={expandedOrderId}
             />
@@ -516,5 +585,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: colors.text.secondary,
+  },
+  exportInvoiceSection: {
+    marginBottom: spacing.md,
+  },
+  exportButtonContainer: {
+    marginTop: spacing.xxl,
   },
 });

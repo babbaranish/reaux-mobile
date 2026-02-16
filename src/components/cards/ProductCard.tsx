@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import Animated, { useSharedValue, withSequence, withSpring, withTiming, useAnimatedStyle, Easing } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontFamily, borderRadius, spacing, shadows } from '../../theme';
@@ -26,12 +27,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     ? Math.round(((product.compareAtPrice! - product.price) / product.compareAtPrice!) * 100)
     : 0;
 
+  // Card fade-in animation on mount
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.9);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
+    scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+  }, []);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  // Add to cart animation
+  const addToCartScale = useSharedValue(1);
+  const addToCartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: addToCartScale.value }],
+  }));
+
+  const handleAddToCart = (e: any) => {
+    e.stopPropagation?.();
+    // Trigger bounce animation
+    addToCartScale.value = withSequence(
+      withSpring(1.2, { damping: 10, stiffness: 300 }),
+      withSpring(0.9, { damping: 10, stiffness: 300 }),
+      withSpring(1, { damping: 10, stiffness: 300 })
+    );
+    onAddToCart();
+  };
+
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={[styles.container, shadows.card]}
-    >
+    <Animated.View style={cardAnimatedStyle}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={[styles.container, shadows.card]}
+      >
       {/* Product Image */}
       <View style={styles.imageContainer}>
         <Image
@@ -51,15 +84,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Add to Cart Button */}
         <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation?.();
-            onAddToCart();
-          }}
-          style={styles.addButton}
+          onPress={handleAddToCart}
           activeOpacity={0.7}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >
-          <Ionicons name="add" size={22} color={colors.text.onPrimary} />
+          <Animated.View style={[styles.addButton, addToCartAnimatedStyle]}>
+            <Ionicons name="add" size={22} color={colors.text.onPrimary} />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -85,6 +116,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </View>
       </View>
     </TouchableOpacity>
+    </Animated.View>
   );
 };
 

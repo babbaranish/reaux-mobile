@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
 // Configure how notifications are handled when app is in foreground
 Notifications.setNotificationHandler({
@@ -9,6 +8,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -16,11 +17,6 @@ Notifications.setNotificationHandler({
  * Request notification permissions from user
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
-  if (!Device.isDevice) {
-    console.log('Must use physical device for push notifications');
-    return false;
-  }
-
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -45,11 +41,7 @@ export async function getPushNotificationToken(): Promise<string | null> {
   try {
     console.log('📲 getPushNotificationToken: Starting...');
     console.log('📲 Device.isDevice:', Device.isDevice);
-
-    if (!Device.isDevice) {
-      console.log('⚠️ Must use physical device for push notifications');
-      return null;
-    }
+    console.log('📲 Platform:', Platform.OS);
 
     // Request permissions first
     console.log('📲 Requesting notification permissions...');
@@ -61,14 +53,9 @@ export async function getPushNotificationToken(): Promise<string | null> {
       return null;
     }
 
-    // Get the Expo push token
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    console.log('📲 Project ID:', projectId);
-
-    console.log('📲 Getting Expo push token...');
-    const token = await Notifications.getExpoPushTokenAsync({
-      projectId,
-    });
+    // Get the native FCM token (for Firebase Admin SDK)
+    console.log('📲 Getting native FCM push token...');
+    const token = await Notifications.getDevicePushTokenAsync();
 
     console.log('✅ Push notification token:', token.data);
 
@@ -170,8 +157,6 @@ export async function scheduleTestNotification(): Promise<void> {
       data: { test: true },
       sound: 'default',
     },
-    trigger: {
-      seconds: 2,
-    },
+    trigger: null, // Show immediately
   });
 }

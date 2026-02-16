@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,19 +8,47 @@ import { Card } from '../../../src/components/ui/Card';
 import { Button } from '../../../src/components/ui/Button';
 import { RoleGuard } from '../../../src/components/guards/RoleGuard';
 import { useAdminStore } from '../../../src/stores/useAdminStore';
+import { useUIStore } from '../../../src/stores/useUIStore';
 import { formatCurrency } from '../../../src/utils/formatters';
+import { exportSalesReportPDF } from '../../../src/utils/pdfExport';
 import { colors, fontFamily, spacing, borderRadius } from '../../../src/theme';
 
 export default function SalesReportScreen() {
   const router = useRouter();
   const { salesReport, isLoading, fetchSalesReport } = useAdminStore();
+  const showToast = useUIStore((s) => s.showToast);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchSalesReport();
   }, []);
 
+  // Debug: Log sales report data
+  useEffect(() => {
+    if (salesReport) {
+      console.log('Sales Report Data:', JSON.stringify(salesReport, null, 2));
+    }
+  }, [salesReport]);
+
+  const handleExportPDF = async () => {
+    if (!salesReport) {
+      showToast('No data to export', 'error');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportSalesReportPDF(salesReport);
+      showToast('PDF exported successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to export PDF', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <RoleGuard allowedRoles={['superadmin']}>
+    <RoleGuard allowedRoles={['admin', 'superadmin']}>
       <SafeScreen>
         <Header
           title="Sales Report"
@@ -99,13 +127,15 @@ export default function SalesReportScreen() {
 
             {/* Export Button */}
             <Button
-              title="Export Data"
-              onPress={() => {}}
+              title="Export as PDF"
+              onPress={handleExportPDF}
               variant="secondary"
               size="lg"
               fullWidth
+              loading={isExporting}
+              disabled={isExporting}
               leftIcon={
-                <Ionicons name="download-outline" size={20} color={colors.text.white} />
+                <Ionicons name="document-text-outline" size={20} color={colors.text.white} />
               }
             />
           </ScrollView>

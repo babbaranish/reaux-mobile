@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import Animated, { useSharedValue, withSequence, withSpring, withTiming, useAnimatedStyle, Easing } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, fontFamily, spacing, borderRadius } from '../../theme';
@@ -41,12 +42,42 @@ export const PostCard: React.FC<PostCardProps> = ({
   const roleBadge = authorRole ? getRoleBadge(authorRole) : null;
   const hasImage = post.mediaType === 'image' && post.mediaUrl;
 
+  // Card fade-in animation on mount
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
+    translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+  }, []);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  // Like animation
+  const likeScale = useSharedValue(1);
+  const likeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: likeScale.value }],
+  }));
+
+  const handleLike = () => {
+    // Trigger animation
+    likeScale.value = withSequence(
+      withSpring(1.3, { damping: 10, stiffness: 300 }),
+      withSpring(1, { damping: 10, stiffness: 300 })
+    );
+    onLike?.();
+  };
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      style={styles.card}
-    >
+    <Animated.View style={cardAnimatedStyle}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        style={styles.card}
+      >
       {/* Image background */}
       {hasImage ? (
         <View style={styles.imageContainer}>
@@ -120,15 +151,17 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Action buttons */}
       <View style={styles.actionsRow}>
         <TouchableOpacity
-          onPress={onLike}
+          onPress={handleLike}
           style={styles.actionButton}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name={post.isLiked ? 'heart' : 'heart-outline'}
-            size={22}
-            color={post.isLiked ? colors.status.error : colors.text.secondary}
-          />
+          <Animated.View style={likeAnimatedStyle}>
+            <Ionicons
+              name={post.isLiked ? 'heart' : 'heart-outline'}
+              size={22}
+              color={post.isLiked ? colors.status.error : colors.text.secondary}
+            />
+          </Animated.View>
           <Text style={styles.actionCount}>
             {formatNumber(post.likesCount)}
           </Text>
@@ -170,6 +203,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         )}
       </View>
     </TouchableOpacity>
+    </Animated.View>
   );
 };
 

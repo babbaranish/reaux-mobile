@@ -49,7 +49,30 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await analyticsApi.getSalesReport();
-      set({ salesReport: response.data, isLoading: false });
+      const rawData = response.data as any;
+
+      // Transform backend data to match frontend structure
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+
+      const transformedData: SalesReport = {
+        totalRevenue: rawData.totalRevenue || 0,
+        monthlyBreakdown: rawData.monthlyStats?.map((stat: any) => ({
+          month: `${monthNames[stat._id.month - 1]} ${stat._id.year}`,
+          orders: stat.orders || 0,
+          revenue: stat.revenue || 0,
+        })) || [],
+        topProducts: rawData.topProducts?.map((item: any) => ({
+          product: {
+            _id: item._id,
+            name: item.name || 'Unknown Product',
+          },
+          totalSold: item.totalQuantity || 0,
+          revenue: item.totalRevenue || 0,
+        })) || [],
+      };
+
+      set({ salesReport: transformedData, isLoading: false });
     } catch (err: any) {
       const message = err.message || 'Failed to load sales report';
       set({ error: message, isLoading: false });

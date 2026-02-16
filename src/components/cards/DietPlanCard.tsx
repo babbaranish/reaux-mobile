@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, withTiming, withSpring, useAnimatedStyle, Easing } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontFamily, typography, spacing, borderRadius, shadows } from '../../theme';
@@ -26,12 +27,27 @@ export const DietPlanCard: React.FC<DietPlanCardProps> = ({ plan, onPress }) => 
   const author = typeof plan.createdBy === 'object' ? (plan.createdBy as User) : null;
   const categoryInfo = categoryBadgeVariant[plan.category] || categoryBadgeVariant.other;
 
+  // Card fade-in animation on mount
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
+    translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      style={[styles.container, shadows.card]}
-    >
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        style={[styles.container, shadows.card]}
+      >
       {/* Image */}
       <View style={styles.imageContainer}>
         {plan.image ? (
@@ -99,6 +115,7 @@ export const DietPlanCard: React.FC<DietPlanCardProps> = ({ plan, onPress }) => 
         </View>
       </View>
     </TouchableOpacity>
+    </Animated.View>
   );
 };
 

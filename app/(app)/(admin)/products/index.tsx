@@ -15,18 +15,23 @@ import { SafeScreen } from '../../../../src/components/layout/SafeScreen';
 import { Header } from '../../../../src/components/layout/Header';
 import { Card } from '../../../../src/components/ui/Card';
 import { Badge } from '../../../../src/components/ui/Badge';
+import { Button } from '../../../../src/components/ui/Button';
 import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { RoleGuard } from '../../../../src/components/guards/RoleGuard';
 import { useProductStore } from '../../../../src/stores/useProductStore';
+import { useUIStore } from '../../../../src/stores/useUIStore';
 import { productsApi } from '../../../../src/api/endpoints/products';
+import { exportProductsListPDF } from '../../../../src/utils/pdfExport';
 import { colors, fontFamily, spacing, borderRadius } from '../../../../src/theme';
 import type { Product } from '../../../../src/types/models';
 
 export default function ProductListScreen() {
   const router = useRouter();
   const { products, isLoading, fetchProducts } = useProductStore();
+  const showToast = useUIStore((s) => s.showToast);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -76,6 +81,23 @@ export default function ProductListScreen() {
     },
     [fetchProducts]
   );
+
+  const handleExportPDF = async () => {
+    if (!products || products.length === 0) {
+      showToast('No products to export', 'error');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportProductsListPDF(products);
+      showToast('PDF exported successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to export PDF', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const renderProductItem = ({ item }: { item: Product }) => {
     const isToggling = togglingIds.has(item._id);
@@ -189,6 +211,24 @@ export default function ProductListScreen() {
                 />
               ) : null
             }
+            ListFooterComponent={
+              products.length > 0 ? (
+                <View style={styles.exportButtonContainer}>
+                  <Button
+                    title="Export as PDF"
+                    onPress={handleExportPDF}
+                    variant="secondary"
+                    size="lg"
+                    fullWidth
+                    loading={isExporting}
+                    disabled={isExporting}
+                    leftIcon={
+                      <Ionicons name="document-text-outline" size={20} color={colors.text.white} />
+                    }
+                  />
+                </View>
+              ) : null
+            }
           />
         </View>
       </SafeScreen>
@@ -296,5 +336,8 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     fontSize: 11,
     lineHeight: 16,
+  },
+  exportButtonContainer: {
+    marginTop: spacing.xxl,
   },
 });

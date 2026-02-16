@@ -1,13 +1,15 @@
 import React from 'react';
 import {
-  TouchableOpacity,
   Text,
   ActivityIndicator,
   StyleSheet,
   ViewStyle,
   TextStyle,
+  Pressable,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { colors, typography, fontFamily, borderRadius, spacing, shadows } from '../theme';
+import { useScalePress } from '../../hooks/useAnimations';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -36,6 +38,7 @@ export const Button: React.FC<ButtonProps> = ({
   style,
 }) => {
   const isDisabled = disabled || loading;
+  const { animatedStyle, onPressIn: handlePressIn, onPressOut: handlePressOut } = useScalePress();
 
   const containerStyles: ViewStyle[] = [
     styles.base,
@@ -62,21 +65,23 @@ export const Button: React.FC<ButtonProps> = ({
         : colors.text.primary;
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
+      onPressIn={isDisabled ? undefined : handlePressIn}
+      onPressOut={isDisabled ? undefined : handlePressOut}
       disabled={isDisabled}
-      activeOpacity={0.7}
-      style={containerStyles}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={spinnerColor} />
-      ) : (
-        <>
-          {leftIcon && leftIcon}
-          <Text style={textStyles}>{title}</Text>
-        </>
-      )}
-    </TouchableOpacity>
+      <Animated.View style={[containerStyles, !isDisabled && animatedStyle]}>
+        {loading ? (
+          <ActivityIndicator size="small" color={spinnerColor} />
+        ) : (
+          <>
+            {leftIcon && leftIcon}
+            <Text style={textStyles}>{title}</Text>
+          </>
+        )}
+      </Animated.View>
+    </Pressable>
   );
 };
 

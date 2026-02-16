@@ -274,33 +274,6 @@ export default function ProfileScreen() {
           </Card>
         )}
 
-        {/* Fees & Memberships */}
-        <Card
-          style={styles.linkCard}
-          onPress={() => router.push('/(app)/(admin)/fees')}
-        >
-          <View style={styles.linkCardContent}>
-            <View style={styles.linkCardLeft}>
-              <Ionicons
-                name="cash-outline"
-                size={22}
-                color={colors.text.primary}
-              />
-              <View style={styles.linkCardText}>
-                <Text style={styles.linkCardTitle}>Fees & Memberships</Text>
-                <Text style={styles.linkCardSubtitle}>
-                  View gym fees and your memberships
-                </Text>
-              </View>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.text.light}
-            />
-          </View>
-        </Card>
-
         {/* Notifications */}
         <Card
           style={styles.linkCard}

@@ -75,7 +75,11 @@ export default function MarketplaceScreen() {
 
   const handleCategoryPress = useCallback(
     (cat: string) => {
-      setCategory(cat === category ? '' : cat);
+      if (cat === 'All') {
+        setCategory('');
+      } else {
+        setCategory(cat === category ? '' : cat);
+      }
     },
     [category],
   );
@@ -105,7 +109,7 @@ export default function MarketplaceScreen() {
     () => (
       <View>
         {/* Promo Banner */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.promoBanner}
           activeOpacity={0.8}
           onPress={() => router.push('/(app)/(shop)/promo')}
@@ -122,16 +126,16 @@ export default function MarketplaceScreen() {
           <View style={styles.promoApplyBtn}>
             <Text style={styles.promoApplyText}>Apply</Text>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Admin Dashboard Button */}
-        {isAdmin && (
+        {/* {isAdmin && (
           <TouchableOpacity style={styles.adminBtn} activeOpacity={0.7}>
             <Ionicons name="bar-chart-outline" size={18} color={colors.text.white} />
             <Text style={styles.adminBtnText}>Superadmin Sales Dashboard</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.text.white} />
           </TouchableOpacity>
-        )}
+        )} */}
 
         {/* Section: In House Products */}
         <Text style={styles.sectionTitle}>In House Products</Text>
@@ -208,7 +212,7 @@ export default function MarketplaceScreen() {
             renderItem={renderProduct}
             keyExtractor={(item) => item._id}
             numColumns={2}
-            estimatedItemSize={220}
+            // estimatedItemSize={220}
             ListHeaderComponent={ListHeader}
             ListFooterComponent={ListFooter}
             onEndReached={handleLoadMore}

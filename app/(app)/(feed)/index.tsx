@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   ScrollView,
   Share,
+  Pressable,
 } from 'react-native';
+import Animated, { useSharedValue, withSpring, withSequence, useAnimatedStyle } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +52,20 @@ export default function FeedScreen() {
     refreshPosts,
     likePost,
   } = useFeedStore();
+
+  // FAB animations
+  const fabScale = useSharedValue(1);
+  const fabAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: fabScale.value }],
+  }));
+
+  const handleFabPressIn = () => {
+    fabScale.value = withSpring(0.9, { damping: 10, stiffness: 400 });
+  };
+
+  const handleFabPressOut = () => {
+    fabScale.value = withSpring(1, { damping: 10, stiffness: 400 });
+  };
 
   useEffect(() => {
     fetchPosts(1, categoryToApi[activeCategory]);
@@ -172,13 +188,15 @@ export default function FeedScreen() {
       </View>
 
       {/* FAB for new post */}
-      <TouchableOpacity
-        style={styles.fab}
+      <Pressable
         onPress={() => router.push('/(app)/(feed)/upload')}
-        activeOpacity={0.8}
+        onPressIn={handleFabPressIn}
+        onPressOut={handleFabPressOut}
       >
-        <Ionicons name="add" size={28} color={colors.text.onPrimary} />
-      </TouchableOpacity>
+        <Animated.View style={[styles.fab, fabAnimatedStyle]}>
+          <Ionicons name="add" size={28} color={colors.text.onPrimary} />
+        </Animated.View>
+      </Pressable>
     </SafeScreen>
   );
 }

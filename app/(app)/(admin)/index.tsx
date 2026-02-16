@@ -102,11 +102,6 @@ export default function AdminDashboardScreen() {
               />
               <View style={styles.divider} />
               <MenuItem
-                label="Fees"
-                onPress={() => router.push('/(app)/(admin)/fees')}
-              />
-              <View style={styles.divider} />
-              <MenuItem
                 label="User Management"
                 onPress={() => router.push('/(app)/(admin)/users')}
               />

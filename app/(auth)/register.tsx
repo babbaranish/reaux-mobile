@@ -7,8 +7,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeScreen } from '../../src/components/layout/SafeScreen';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
@@ -44,159 +47,175 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeScreen style={styles.screen} edges={['top', 'left', 'right']} statusBarStyle="light-content">
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <SafeScreen style={styles.screen} edges={[]} statusBarStyle="light-content">
+      <ImageBackground
+        source={require('../../assets/login.jpg')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
-        <ScrollView
-          style={styles.flex}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <LinearGradient
+          colors={[
+            'rgba(28, 28, 13, 0.85)',
+            'rgba(248, 248, 245, 0.75)',
+
+            'rgba(248, 248, 245, 0.75)',
+            'rgba(248, 248, 245, 0.92)',
+            'rgba(255, 255, 255, 0.97)'
+          ]}
+          locations={[0, 0.25, 0.5, 0.75, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.gradient}
         >
-          {/* Dark header */}
-          <View style={styles.headerSection}>
-            <View style={styles.logoRow}>
-              <View style={styles.logoBox}>
-                <Text style={styles.logoR}>R</Text>
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView
+              style={styles.flex}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Logo at top */}
+              <View style={styles.logoSection}>
+                <Image
+                  source={require('../../assets/logo-temp.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
-              <Text style={styles.logoText}>REAUX LABS</Text>
-            </View>
-            <Text style={styles.heading}>Create Account</Text>
-            <Text style={styles.subtext}>
-              Join the community and start your fitness journey.
-            </Text>
-          </View>
 
-          {/* Form */}
-          <View style={styles.formSection}>
-            <Input
-              label="FULL NAME"
-              placeholder="Enter your name"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
+              {/* Form section at bottom */}
+              <View style={styles.formSection}>
+                <Text style={styles.heading}>Create Account</Text>
+                <Text style={styles.subtext}>
+                  Join the community and start your fitness journey.
+                </Text>
 
-            <Input
-              label="EMAIL"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+                <View style={styles.formInputs}>
+                  <Input
+                    label="FULL NAME"
+                    placeholder="Enter your name"
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                  />
 
-            <Input
-              label="PHONE (OPTIONAL)"
-              placeholder="Enter your phone number"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
+                  <Input
+                    label="EMAIL"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
 
-            <Input
-              label="PASSWORD"
-              placeholder="Create a password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+                  <Input
+                    label="PHONE (OPTIONAL)"
+                    placeholder="Enter your phone number"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                  />
 
-            <Button
-              title="Create Account  \u2192"
-              onPress={handleRegister}
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={isLoading}
-              disabled={isLoading}
-            />
+                  <Input
+                    label="PASSWORD"
+                    placeholder="Create a password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                  />
 
-            <View style={styles.signinRow}>
-              <Text style={styles.signinText}>Already have an account? </Text>
-              <Link href="/(auth)/login" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.signinLink}>Sign in {'\u2192'}</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+                  <Button
+                    title="Create Account"
+                    onPress={handleRegister}
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    loading={isLoading}
+                    disabled={isLoading}
+                  />
+
+                  <View style={styles.signinRow}>
+                    <Text style={styles.signinText}>Already have an account? </Text>
+                    <Link href="/(auth)/login" asChild>
+                      <TouchableOpacity>
+                        <Text style={styles.signinLink}>Sign in</Text>
+                      </TouchableOpacity>
+                    </Link>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </LinearGradient>
+      </ImageBackground>
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background.dark,
+    flex: 1,
+  },
+  backgroundImage: {
+    flex: 1,
+
+  },
+  gradient: {
+    flex: 1,
   },
   flex: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    minHeight: '100%',
   },
-  headerSection: {
-    backgroundColor: colors.background.dark,
+  logoSection: {
     paddingHorizontal: spacing.xl,
-    paddingTop: 40,
-    paddingBottom: 32,
-  },
-  logoRow: {
-    flexDirection: 'row',
+    paddingTop: 100,
+    paddingBottom: 20,
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 24,
+    justifyContent: 'flex-end',
   },
-  logoBox: {
-    width: 36,
-    height: 36,
-    backgroundColor: colors.primary.yellow,
-    borderRadius: 8,
+  logo: {
+    width: 200,
+    height: 60,
+  },
+  formSection: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: 40,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoR: {
-    fontFamily: fontFamily.bold,
-    fontSize: 20,
-    color: colors.text.onPrimary,
-  },
-  logoText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    color: colors.text.white,
-    letterSpacing: 2,
   },
   heading: {
     fontFamily: fontFamily.bold,
     fontSize: 28,
     lineHeight: 34,
-    color: colors.text.white,
-    marginBottom: 8,
+    color: colors.text.primary,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   subtext: {
     fontFamily: fontFamily.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+    marginBottom: 20,
+    textAlign: 'center',
   },
-  formSection: {
-    flex: 1,
-    backgroundColor: colors.background.light,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: spacing.xl,
-    paddingTop: 28,
-    paddingBottom: 40,
+  formInputs: {
+    gap: spacing.sm,
+    width: '100%',
   },
   signinRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 8,
   },
   signinText: {
     fontFamily: fontFamily.regular,

@@ -7,21 +7,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  ImageBackground,
 } from 'react-native';
 import { Link, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeScreen } from '../../src/components/layout/SafeScreen';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
+import { FadeInView, SlideInUpView } from '../../src/components/animated/AnimatedComponents';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { useUIStore } from '../../src/stores/useUIStore';
-import { colors, fontFamily, spacing, borderRadius } from '../../src/theme';
+import { colors, fontFamily, spacing } from '../../src/theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
-  const [codeApplied, setCodeApplied] = useState(false);
 
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -40,16 +41,10 @@ export default function LoginScreen() {
     }
   };
 
-  const handleApplyCode = () => {
-    if (inviteCode.trim().length > 0) {
-      setCodeApplied(true);
-    }
-  };
-
   return (
     <SafeScreen
       style={styles.screen}
-      edges={['top', 'left', 'right']}
+      edges={[]}
       statusBarStyle="light-content"
     >
       <KeyboardAvoidingView
@@ -62,116 +57,90 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Dark header section */}
-          <View style={styles.headerSection}>
-            <View style={styles.logoRow}>
-              <View style={styles.logoBox}>
-                <Text style={styles.logoR}>R</Text>
-              </View>
-              <Text style={styles.logoText}>REAUX LABS</Text>
-            </View>
-            <Text style={styles.heading}>Unlock Your Potential</Text>
-            <Text style={styles.subtext}>
-              Manage your clients, buy supplements, and track your fitness journey.
-            </Text>
-          </View>
+          {/* Login header */}
+          {/* <View style={styles.loginHeader}>
+            <Text style={styles.loginTitle}>Login</Text>
+          </View> */}
+
+          {/* Hero section with background image */}
+          <ImageBackground
+            source={require('../../assets/login.jpg')}
+            style={styles.heroSection}
+            resizeMode="cover"
+          >
+            {/* Light gradient overlay from bottom to top */}
+            <LinearGradient
+              colors={[
+                'rgba(28, 28, 13, 0.7)',
+                'rgba(28, 28, 13, 0.3)',
+                'rgba(248, 248, 245, 0.7)',
+                'rgba(248, 248, 245, 0.9)',
+                'rgba(255, 255, 255, 0.95)'
+              ]}
+              locations={[0, 0.25, 0.5, 0.75, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.fullOverlay}
+            >
+              <FadeInView delay={0}>
+                <Image
+                  source={require('../../assets/logo.svg')}
+                  style={styles.logo}
+                  contentFit="contain"
+                />
+              </FadeInView>
+              <SlideInUpView delay={100}>
+                <Text style={styles.heading}>Unlock Your Potential</Text>
+              </SlideInUpView>
+              <SlideInUpView delay={200}>
+                <Text style={styles.subtext}>
+                  Manage your clients, buy supplements, and track your fitness journey.
+                </Text>
+              </SlideInUpView>
+            </LinearGradient>
+          </ImageBackground>
 
           {/* Form section */}
           <View style={styles.formSection}>
-            <Input
-              label="EMAIL"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <Input
-              label="PASSWORD"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              rightIcon={
-                <Link href="/(auth)/forgot-password" asChild>
-                  <TouchableOpacity>
-                    <Text style={styles.forgotText}>Forgot?</Text>
-                  </TouchableOpacity>
-                </Link>
-              }
-            />
-
-            <View style={styles.inviteRow}>
-              <View style={styles.inviteInputWrap}>
-                <Input
-                  label="INVITE CODE (OPTIONAL)"
-                  placeholder="Enter invite code"
-                  value={inviteCode}
-                  onChangeText={(text) => {
-                    setInviteCode(text);
-                    if (codeApplied) setCodeApplied(false);
-                  }}
-                  rightIcon={
-                    codeApplied ? (
-                      <View style={styles.codeApplied}>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={18}
-                          color={colors.status.success}
-                        />
-                        <Text style={styles.codeAppliedText}>Code Applied!</Text>
-                      </View>
-                    ) : inviteCode.trim().length > 0 ? (
-                      <TouchableOpacity onPress={handleApplyCode}>
-                        <Text style={styles.applyText}>Apply</Text>
-                      </TouchableOpacity>
-                    ) : undefined
-                  }
-                />
-              </View>
-            </View>
-
-            <Button
-              title="Continue"
-              onPress={handleContinue}
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={isLoading}
-              disabled={isLoading}
-            />
-
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR JOIN WITH</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Social buttons */}
-            <View style={styles.socialRow}>
-              <Button
-                title="Google"
-                onPress={() => {}}
-                variant="outline"
-                size="lg"
-                leftIcon={
-                  <Ionicons name="logo-google" size={20} color={colors.text.primary} />
-                }
-                style={styles.socialButton}
+            <FadeInView delay={300}>
+              <Input
+                label="Email Or Phone Number"
+                placeholder="Enter your email or phone"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
-              <Button
-                title="Apple"
-                onPress={() => {}}
-                variant="outline"
-                size="lg"
-                leftIcon={
-                  <Ionicons name="logo-apple" size={20} color={colors.text.primary} />
+            </FadeInView>
+
+            <FadeInView delay={325}>
+              <Input
+                label="Password"
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                rightIcon={
+                  <Link href="/(auth)/forgot-password" asChild>
+                    <TouchableOpacity>
+                      <Text style={styles.forgotText}>Forgot?</Text>
+                    </TouchableOpacity>
+                  </Link>
                 }
-                style={styles.socialButton}
               />
-            </View>
+            </FadeInView>
+
+            <SlideInUpView delay={400}>
+              <Button
+                title="Continue"
+                onPress={handleContinue}
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={isLoading}
+                disabled={isLoading}
+              />
+            </SlideInUpView>
 
             {/* Sign up link */}
             <View style={styles.signupRow}>
@@ -191,7 +160,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background.dark,
+    backgroundColor: colors.background.light,
   },
   flex: {
     flex: 1,
@@ -199,79 +168,61 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  headerSection: {
-    backgroundColor: colors.background.dark,
+  loginHeader: {
     paddingHorizontal: spacing.xl,
-    paddingTop: 40,
-    paddingBottom: 32,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.background.dark,
   },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 24,
+  loginTitle: {
+    fontFamily: fontFamily.medium,
+    fontSize: 16,
+    color: colors.text.white,
+    opacity: 0.7,
   },
-  logoBox: {
-    width: 36,
-    height: 36,
-    backgroundColor: colors.primary.yellow,
-    borderRadius: 8,
-    alignItems: 'center',
+  heroSection: {
+    flex: 1,
     justifyContent: 'center',
   },
-  logoR: {
-    fontFamily: fontFamily.bold,
-    fontSize: 20,
-    color: colors.text.onPrimary,
+  fullOverlay: {
+    paddingTop: 250,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
   },
-  logoText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    color: colors.text.white,
-    letterSpacing: 2,
+  logo: {
+    width: 200,
+    height: 52,
+    marginBottom: spacing.lg,
   },
   heading: {
     fontFamily: fontFamily.bold,
     fontSize: 28,
-    lineHeight: 34,
-    color: colors.text.white,
-    marginBottom: 8,
+    lineHeight: 36,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtext: {
     fontFamily: fontFamily.regular,
     fontSize: 15,
     lineHeight: 22,
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
   formSection: {
     flex: 1,
-    backgroundColor: colors.background.light,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: spacing.xl,
-    paddingTop: 28,
-    paddingBottom: 40,
-  },
-  inviteRow: {
-    marginBottom: spacing.sm,
-  },
-  inviteInputWrap: {
-    flex: 1,
-  },
-  codeApplied: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  codeAppliedText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 12,
-    color: colors.status.success,
-  },
-  applyText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 13,
-    color: colors.primary.yellowDark,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    marginTop: -30,
+    justifyContent: 'center',
   },
   dividerRow: {
     flexDirection: 'row',

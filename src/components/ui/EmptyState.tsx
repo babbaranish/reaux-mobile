@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, fontFamily, spacing } from '../theme';
 import { Button } from './Button';
+import { ScaleEntranceView, SlideInUpView } from '../animated/AnimatedComponents';
 
 interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -21,24 +22,35 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Ionicons
-          name={icon}
-          size={48}
-          color={colors.text.light}
-        />
-      </View>
-      <Text style={styles.title}>{title}</Text>
-      {message && <Text style={styles.message}>{message}</Text>}
+      <ScaleEntranceView delay={0}>
+        <View style={styles.iconContainer}>
+          <Ionicons
+            name={icon}
+            size={48}
+            color={colors.text.light}
+          />
+        </View>
+      </ScaleEntranceView>
+
+      <SlideInUpView delay={100}>
+        <Text style={styles.title}>{title}</Text>
+      </SlideInUpView>
+
+      {message && (
+        <SlideInUpView delay={200}>
+          <Text style={styles.message}>{message}</Text>
+        </SlideInUpView>
+      )}
+
       {actionLabel && onAction && (
-        <View style={styles.actionContainer}>
+        <SlideInUpView delay={300} style={styles.actionContainer}>
           <Button
             title={actionLabel}
             onPress={onAction}
             variant="primary"
             size="md"
           />
-        </View>
+        </SlideInUpView>
       )}
     </View>
   );

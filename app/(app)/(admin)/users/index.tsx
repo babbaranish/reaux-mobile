@@ -11,6 +11,8 @@ import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { UserCard } from '../../../../src/components/cards/UserCard';
 import { RoleGuard } from '../../../../src/components/guards/RoleGuard';
 import { useAdminStore } from '../../../../src/stores/useAdminStore';
+import { useUIStore } from '../../../../src/stores/useUIStore';
+import { exportUsersListPDF } from '../../../../src/utils/pdfExport';
 import { colors, fontFamily, spacing, borderRadius } from '../../../../src/theme';
 import type { User, Role } from '../../../../src/types/models';
 
@@ -25,8 +27,10 @@ const TABS: { key: TabFilter; label: string }[] = [
 export default function UsersScreen() {
   const router = useRouter();
   const { users, isLoading, pagination, fetchUsers, updateUserStatus } = useAdminStore();
+  const showToast = useUIStore((s) => s.showToast);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchUsers(1);
@@ -67,6 +71,23 @@ export default function UsersScreen() {
     ),
     [handleDeactivate],
   );
+
+  const handleExportPDF = async () => {
+    if (!filteredUsers || filteredUsers.length === 0) {
+      showToast('No users to export', 'error');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportUsersListPDF(filteredUsers);
+      showToast('PDF exported successfully', 'success');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to export PDF', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <RoleGuard allowedRoles={['admin', 'superadmin']}>
@@ -144,13 +165,15 @@ export default function UsersScreen() {
           {/* Export Button */}
           <View style={styles.exportContainer}>
             <Button
-              title="Export Data"
-              onPress={() => {}}
+              title="Export as PDF"
+              onPress={handleExportPDF}
               variant="secondary"
               size="lg"
               fullWidth
+              loading={isExporting}
+              disabled={isExporting}
               leftIcon={
-                <Ionicons name="download-outline" size={20} color={colors.text.white} />
+                <Ionicons name="document-text-outline" size={20} color={colors.text.white} />
               }
             />
           </View>
