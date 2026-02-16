@@ -197,12 +197,20 @@ export default function CheckoutScreen() {
 
           {/* Payment */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Payment</Text>
-            <View style={styles.paymentInfo}>
-              <Ionicons name="card-outline" size={20} color={colors.text.secondary} />
-              <Text style={styles.paymentText}>
-                Payment will be processed via Razorpay
-              </Text>
+            <Text style={styles.sectionTitle}>Payment Method</Text>
+            <View style={styles.paymentCard}>
+              <View style={styles.paymentOption}>
+                <View style={styles.paymentIconCircle}>
+                  <Ionicons name="cash-outline" size={24} color={colors.primary.yellowDark} />
+                </View>
+                <View style={styles.paymentDetails}>
+                  <Text style={styles.paymentMethodName}>Cash on Delivery</Text>
+                  <Text style={styles.paymentMethodDesc}>
+                    Pay when you receive your order
+                  </Text>
+                </View>
+                <Ionicons name="checkmark-circle" size={24} color={colors.status.success} />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -344,17 +352,41 @@ const styles = StyleSheet.create({
   },
 
   // Payment
-  paymentInfo: {
+  paymentCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.card,
+    borderWidth: 2,
+    borderColor: colors.primary.yellow,
+    overflow: 'hidden',
+  },
+  paymentOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.border.light,
-    borderRadius: borderRadius.lg,
     padding: spacing.lg,
+    gap: spacing.md,
   },
-  paymentText: {
+  paymentIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary.yellowLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentDetails: {
+    flex: 1,
+  },
+  paymentMethodName: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  paymentMethodDesc: {
     fontFamily: fontFamily.regular,
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.text.secondary,
   },
 

@@ -21,15 +21,13 @@ import { colors, fontFamily, borderRadius, spacing, shadows } from '../../../src
 import type { Product } from '../../../src/types/models';
 
 const PAYMENT_METHODS = [
-  { id: 'razorpay', label: 'Razorpay', icon: 'card-outline' as const },
-  { id: 'upi', label: 'UPI', icon: 'phone-portrait-outline' as const },
-  { id: 'apple', label: 'Apple Pay', icon: 'logo-apple' as const },
+  { id: 'cod', label: 'Cash on Delivery', icon: 'cash-outline' as const },
 ];
 
 export default function CartScreen() {
   const { cart, isLoading, fetchCart, removeFromCart, cartTotal } = useCartStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState('razorpay');
+  const [selectedPayment, setSelectedPayment] = useState('cod');
 
   useEffect(() => {
     fetchCart();
