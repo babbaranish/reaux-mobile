@@ -101,8 +101,8 @@ export default function DietScreen() {
             onPress={() => router.push('/(app)/(diet)/upload' as any)}
             activeOpacity={0.7}
           >
-            <Ionicons name="analytics-outline" size={18} color={colors.text.primary} />
-            <Text style={styles.analyticsText}>Diet Plans Analytics</Text>
+            <Ionicons name="add-circle-outline" size={18} color={colors.text.primary} />
+            <Text style={styles.analyticsText}>Add New Diet Plan</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
         )}

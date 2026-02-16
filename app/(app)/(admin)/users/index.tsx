@@ -96,6 +96,18 @@ export default function UsersScreen() {
           title="Users"
           showBack
           onBack={() => router.back()}
+          rightAction={
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/(admin)/users/create')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name="person-add-outline"
+                size={24}
+                color={colors.text.primary}
+              />
+            </TouchableOpacity>
+          }
         />
 
         <View style={styles.container}>

@@ -15,6 +15,7 @@ import { SafeScreen } from '../../../src/components/layout/SafeScreen';
 import { Header } from '../../../src/components/layout/Header';
 import { Input } from '../../../src/components/ui/Input';
 import { Button } from '../../../src/components/ui/Button';
+import { RoleGuard } from '../../../src/components/guards/RoleGuard';
 import { reelsApi } from '../../../src/api/endpoints/reels';
 import {
   colors,
@@ -132,7 +133,8 @@ export default function NewReelScreen() {
   }, [video, caption, affiliateLink, selectedCategory, thumbnail, router]);
 
   return (
-    <SafeScreen>
+    <RoleGuard allowedRoles={['admin', 'superadmin']}>
+      <SafeScreen>
       <Header
         title="New Reel"
         showBack
@@ -308,6 +310,7 @@ export default function NewReelScreen() {
         </View>
       </ScrollView>
     </SafeScreen>
+    </RoleGuard>
   );
 }
 

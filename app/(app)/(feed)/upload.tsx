@@ -16,6 +16,7 @@ import { SafeScreen } from '../../../src/components/layout/SafeScreen';
 import { Header } from '../../../src/components/layout/Header';
 import { Input } from '../../../src/components/ui/Input';
 import { Button } from '../../../src/components/ui/Button';
+import { RoleGuard } from '../../../src/components/guards/RoleGuard';
 import { useFeedStore } from '../../../src/stores/useFeedStore';
 import { useImagePicker } from '../../../src/hooks/useImagePicker';
 import {
@@ -72,7 +73,8 @@ export default function UploadPostScreen() {
   }, [content, image, hashtags, selectedCategory, createPost, router]);
 
   return (
-    <SafeScreen>
+    <RoleGuard allowedRoles={['admin', 'superadmin']}>
+      <SafeScreen>
       <Header
         title="New Post"
         showBack
@@ -228,6 +230,7 @@ export default function UploadPostScreen() {
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeScreen>
+    </RoleGuard>
   );
 }
 

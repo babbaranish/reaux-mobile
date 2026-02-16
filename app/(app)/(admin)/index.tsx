@@ -27,7 +27,7 @@ export default function AdminDashboardScreen() {
   const isSuperadmin = user?.role === 'superadmin';
 
   return (
-    <RoleGuard allowedRoles={['admin', 'superadmin']}>
+    <RoleGuard allowedRoles={['superadmin']}>
       <SafeScreen>
         <Header title="Admin Panel" />
         <ScrollView

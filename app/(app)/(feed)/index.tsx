@@ -18,6 +18,7 @@ import { PostCard } from '../../../src/components/cards/PostCard';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SkeletonCard } from '../../../src/components/ui/SkeletonLoader';
 import { useFeedStore } from '../../../src/stores/useFeedStore';
+import { useAuthStore } from '../../../src/stores/useAuthStore';
 import {
   colors,
   fontFamily,
@@ -41,6 +42,8 @@ const categoryToApi: Record<Category, string | undefined> = {
 export default function FeedScreen() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<Category>('For You');
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const {
     posts,
@@ -117,16 +120,18 @@ export default function FeedScreen() {
       {/* Header */}
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Feed</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/(app)/(feed)/upload')}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons
-            name="add-circle-outline"
-            size={28}
-            color={colors.text.primary}
-          />
-        </TouchableOpacity>
+        {isAdmin && (
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/(feed)/upload')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="add-circle-outline"
+              size={28}
+              color={colors.text.primary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Category tabs */}
@@ -166,9 +171,9 @@ export default function FeedScreen() {
           <EmptyState
             icon="newspaper-outline"
             title="No posts yet"
-            message="Be the first to share something with the community."
-            actionLabel="Create Post"
-            onAction={() => router.push('/(app)/(feed)/upload')}
+            message={isAdmin ? "Be the first to share something with the community." : "Check back later for new posts."}
+            actionLabel={isAdmin ? "Create Post" : undefined}
+            onAction={isAdmin ? () => router.push('/(app)/(feed)/upload') : undefined}
           />
         ) : (
           <FlashList
@@ -187,16 +192,18 @@ export default function FeedScreen() {
         )}
       </View>
 
-      {/* FAB for new post */}
-      <Pressable
-        onPress={() => router.push('/(app)/(feed)/upload')}
-        onPressIn={handleFabPressIn}
-        onPressOut={handleFabPressOut}
-      >
-        <Animated.View style={[styles.fab, fabAnimatedStyle]}>
-          <Ionicons name="add" size={28} color={colors.text.onPrimary} />
-        </Animated.View>
-      </Pressable>
+      {/* FAB for new post - Admin only */}
+      {isAdmin && (
+        <Pressable
+          onPress={() => router.push('/(app)/(feed)/upload')}
+          onPressIn={handleFabPressIn}
+          onPressOut={handleFabPressOut}
+        >
+          <Animated.View style={[styles.fab, fabAnimatedStyle]}>
+            <Ionicons name="add" size={28} color={colors.text.onPrimary} />
+          </Animated.View>
+        </Pressable>
+      )}
     </SafeScreen>
   );
 }

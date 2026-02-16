@@ -43,6 +43,7 @@ export default function ProfileScreen() {
   const [hasChanges, setHasChanges] = useState(false);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isSuperadmin = user?.role === 'superadmin';
   const gym = typeof user?.gymId === 'object' ? (user.gymId as Gym) : null;
 
   // Fetch unread notification count on mount
@@ -216,8 +217,8 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Admin Panel */}
-        {isAdmin && (
+        {/* Admin Panel - Superadmin Only */}
+        {isSuperadmin && (
           <Card
             style={styles.linkCard}
             onPress={() => router.push('/(app)/(admin)')}

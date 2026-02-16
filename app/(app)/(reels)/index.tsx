@@ -15,6 +15,7 @@ import { SafeScreen } from '../../../src/components/layout/SafeScreen';
 import { ReelCard } from '../../../src/components/cards/ReelCard';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { useReelStore } from '../../../src/stores/useReelStore';
+import { useAuthStore } from '../../../src/stores/useAuthStore';
 import { colors, fontFamily, typography, spacing, shadows } from '../../../src/theme';
 import type { Reel } from '../../../src/types/models';
 
@@ -24,6 +25,8 @@ export default function ReelsScreen() {
   const router = useRouter();
   const [visibleId, setVisibleId] = useState<string | null>(null);
   const [reelHeight, setReelHeight] = useState(SCREEN_HEIGHT);
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const {
     reels,
@@ -115,9 +118,9 @@ export default function ReelsScreen() {
           <EmptyState
             icon="videocam-outline"
             title="No reels yet"
-            message="Be the first to share a reel with the community."
-            actionLabel="Create Reel"
-            onAction={() => router.push('/(app)/(feed)/new-reel')}
+            message={isAdmin ? "Be the first to share a reel with the community." : "Check back later for new reels."}
+            actionLabel={isAdmin ? "Create Reel" : undefined}
+            onAction={isAdmin ? () => router.push('/(app)/(feed)/new-reel') : undefined}
           />
         ) : (
           <FlatList
@@ -147,12 +150,14 @@ export default function ReelsScreen() {
         {/* Overlay header */}
         <View style={styles.overlayHeader} pointerEvents="box-none">
           <Text style={styles.headerTitle}>Reels</Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(app)/(feed)/new-reel')}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="videocam-outline" size={26} color={colors.text.white} />
-          </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/(feed)/new-reel')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="videocam-outline" size={26} color={colors.text.white} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </SafeScreen>
