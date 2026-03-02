@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,9 @@ import { SafeScreen } from '../../../src/components/layout/SafeScreen';
 import { Header } from '../../../src/components/layout/Header';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SkeletonLoader } from '../../../src/components/ui/SkeletonLoader';
+import { RoleGuard } from '../../../src/components/guards/RoleGuard';
 import { useMembershipStore } from '../../../src/stores/useMembershipStore';
+import { useAuthStore } from '../../../src/stores/useAuthStore';
 import { formatCurrency, formatDate } from '../../../src/utils/formatters';
 import { Badge } from '../../../src/components/ui/Badge';
 import {
@@ -23,28 +25,37 @@ import type {
   Gym,
   MembershipStatus,
   Membership,
+  User,
 } from '../../../src/types/models';
 import { TouchableOpacity } from 'react-native';
 
-export default function MyMembershipScreen() {
+function UserMembershipsContent() {
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
   const {
-    myMemberships,
+    memberships,
     membershipsLoading,
     membershipsPagination,
-    fetchMyMemberships,
+    fetchMemberships,
+    cancelMembership,
     clearSelectedMembership,
   } = useMembershipStore();
   const [refreshing, setRefreshing] = useState(false);
 
+  const isSuperadmin = user?.role === 'superadmin';
+  const gymId = typeof user?.gymId === 'object' ? (user.gymId as Gym)?._id : user?.gymId;
+
   useEffect(() => {
     clearSelectedMembership();
-    fetchMyMemberships(1);
+    // Admin sees only their gym's memberships, superadmin sees all
+    const filters = isSuperadmin ? {} : { gymId: gymId || undefined };
+    fetchMemberships(1, filters);
   }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchMyMemberships(1);
+    const filters = isSuperadmin ? {} : { gymId: gymId || undefined };
+    await fetchMemberships(1, filters);
     setRefreshing(false);
   };
 
@@ -53,8 +64,31 @@ export default function MyMembershipScreen() {
       !membershipsLoading &&
       membershipsPagination.page < membershipsPagination.pages
     ) {
-      fetchMyMemberships(membershipsPagination.page + 1);
+      const filters = isSuperadmin ? {} : { gymId: gymId || undefined };
+      fetchMemberships(membershipsPagination.page + 1, filters);
     }
+  };
+
+  const handleCancelMembership = (membership: Membership) => {
+    Alert.alert(
+      'Cancel Membership',
+      'Are you sure you want to cancel this membership?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelMembership(membership._id);
+              Alert.alert('Success', 'Membership cancelled successfully');
+            } catch {
+              Alert.alert('Error', 'Failed to cancel membership');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const getStatusVariant = (
@@ -83,7 +117,7 @@ export default function MyMembershipScreen() {
   const renderSkeleton = () => (
     <View style={styles.skeletonContainer}>
       {[1, 2, 3].map((i) => (
-        <SkeletonLoader key={i} width="100%" height={200} borderRadius={16} />
+        <SkeletonLoader key={i} width="100%" height={220} borderRadius={16} />
       ))}
     </View>
   );
@@ -95,6 +129,8 @@ export default function MyMembershipScreen() {
         : null;
     const gym =
       typeof membership.gymId === 'object' ? (membership.gymId as Gym) : null;
+    const member =
+      typeof membership.userId === 'object' ? (membership.userId as User) : null;
 
     // Check if membership is expiring soon (within 7 days)
     const isExpiringSoon = () => {
@@ -116,8 +152,11 @@ export default function MyMembershipScreen() {
         {/* Header */}
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            <Ionicons name="card-outline" size={24} color={colors.primary.yellow} />
-            <Text style={styles.planName}>{plan?.name || 'Unknown Plan'}</Text>
+            <Ionicons name="person-circle-outline" size={24} color={colors.primary.yellow} />
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.memberName}>{member?.name || 'Unknown User'}</Text>
+              <Text style={styles.planName}>{plan?.name || 'Unknown Plan'}</Text>
+            </View>
           </View>
           <Badge
             text={membership.status.toUpperCase()}
@@ -126,11 +165,19 @@ export default function MyMembershipScreen() {
           />
         </View>
 
+        {/* Member Email */}
+        {member && (
+          <View style={styles.infoRow}>
+            <Ionicons name="mail-outline" size={16} color={colors.text.secondary} />
+            <Text style={styles.infoText}>{member.email}</Text>
+          </View>
+        )}
+
         {/* Gym */}
         {gym && (
-          <View style={styles.gymRow}>
+          <View style={styles.infoRow}>
             <Ionicons name="business-outline" size={16} color={colors.text.secondary} />
-            <Text style={styles.gymText}>{gym.name}</Text>
+            <Text style={styles.infoText}>{gym.name}</Text>
           </View>
         )}
 
@@ -164,10 +211,21 @@ export default function MyMembershipScreen() {
               </Text>
             </View>
             <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>Amount Paid</Text>
+              <Text style={styles.priceLabel}>Amount</Text>
               <Text style={styles.priceValue}>{formatCurrency(plan.price)}</Text>
             </View>
           </View>
+        )}
+
+        {/* Action Button */}
+        {membership.status === 'active' && (
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => handleCancelMembership(membership)}
+          >
+            <Ionicons name="close-circle-outline" size={18} color={colors.status.error} />
+            <Text style={styles.cancelButtonText}>Cancel Membership</Text>
+          </TouchableOpacity>
         )}
       </TouchableOpacity>
     );
@@ -175,15 +233,15 @@ export default function MyMembershipScreen() {
 
   return (
     <SafeScreen>
-      <Header title="My Membership" showBack onBack={() => router.back()} />
+      <Header title="User Memberships" showBack onBack={() => router.back()} />
 
-      {membershipsLoading && myMemberships.length === 0 ? (
+      {membershipsLoading && memberships.length === 0 ? (
         renderSkeleton()
       ) : (
         <FlashList
-          data={myMemberships}
+          data={memberships}
           renderItem={({ item }) => renderMembershipCard(item)}
-          estimatedItemSize={200}
+          estimatedItemSize={220}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -199,13 +257,25 @@ export default function MyMembershipScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="card-outline"
-              title="No Membership"
-              message="You don't have any memberships yet. Contact your gym admin to get started."
+              title="No Memberships"
+              message={
+                isSuperadmin
+                  ? "No memberships found in the system."
+                  : "No memberships found for your gym."
+              }
             />
           }
         />
       )}
     </SafeScreen>
+  );
+}
+
+export default function UserMembershipsScreen() {
+  return (
+    <RoleGuard allowedRoles={['admin', 'superadmin']} fallbackRoute="/(app)/(profile)">
+      <UserMembershipsContent />
+    </RoleGuard>
   );
 }
 
@@ -238,20 +308,29 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     flex: 1,
   },
-  planName: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 24,
-    color: colors.text.primary,
+  cardHeaderText: {
     flex: 1,
   },
-  gymRow: {
+  memberName: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.text.primary,
+  },
+  planName: {
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  gymText: {
+  infoText: {
     fontFamily: fontFamily.regular,
     fontSize: 14,
     lineHeight: 20,
@@ -260,6 +339,7 @@ const styles = StyleSheet.create({
   datesRow: {
     flexDirection: 'row',
     gap: spacing.lg,
+    marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
   dateColumn: {
@@ -315,5 +395,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     color: colors.text.primary,
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.background.light,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.status.error,
+  },
+  cancelButtonText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.status.error,
   },
 });

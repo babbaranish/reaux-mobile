@@ -73,7 +73,7 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
       return {
         ...challenge,
         participants: [
-          ...challenge.participants,
+          ...(challenge.participants ?? []),
           { userId, progress: 0, joinedAt: new Date().toISOString() },
         ],
       };

@@ -29,6 +29,20 @@ export interface User {
   updatedAt: string;
 }
 
+// Birthday
+export interface BirthdayUser {
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  dateOfBirth: string;
+  gymId?: { name: string; slug?: string };
+}
+
+export interface UpcomingBirthdayUser extends BirthdayUser {
+  daysUntil: number;
+}
+
 // Gym
 export interface Gym {
   _id: string;

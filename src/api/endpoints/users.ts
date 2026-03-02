@@ -1,6 +1,16 @@
 import client from '../client';
 import type { ApiResponse, PaginatedResponse, PaginationParams } from '../types';
-import type { User, Role, UserStatus } from '../../types/models';
+import type { User, Role, UserStatus, Gender, BirthdayUser, UpcomingBirthdayUser } from '../../types/models';
+
+interface UpdateUserPayload {
+  name?: string;
+  phone?: string;
+  role?: Role;
+  gymId?: string;
+  gender?: Gender;
+  dateOfBirth?: string;
+  status?: UserStatus;
+}
 
 interface CreateUserPayload {
   name: string;
@@ -9,6 +19,8 @@ interface CreateUserPayload {
   phone?: string;
   role?: Role;
   gymId?: string;
+  gender: Gender;
+  dateOfBirth: string;
   status?: UserStatus;
 }
 
@@ -27,4 +39,13 @@ export const usersApi = {
 
   updateUserStatus: (id: string, status: UserStatus) =>
     client.put<ApiResponse<User>>(`/users/${id}/status`, { status }).then(r => r.data),
+
+  updateUser: (id: string, payload: UpdateUserPayload) =>
+    client.put<ApiResponse<User>>(`/users/${id}`, payload).then(r => r.data),
+
+  getTodayBirthdays: () =>
+    client.get<ApiResponse<BirthdayUser[]>>('/users/birthdays/today').then(r => r.data),
+
+  getUpcomingBirthdays: (days = 7) =>
+    client.get<ApiResponse<UpcomingBirthdayUser[]>>('/users/birthdays/upcoming', { params: { days } }).then(r => r.data),
 };

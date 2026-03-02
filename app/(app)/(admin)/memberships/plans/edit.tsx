@@ -112,7 +112,7 @@ export default function EditMembershipPlanScreen() {
 
   if (plansLoading || !selectedPlan || !isLoaded) {
     return (
-      <RoleGuard allowedRoles={['superadmin']}>
+      <RoleGuard allowedRoles={['admin', 'superadmin']}>
         <SafeScreen>
           <Header title="Edit Plan" showBack onBack={() => router.back()} />
           <View style={styles.skeletonContainer}>
@@ -126,7 +126,7 @@ export default function EditMembershipPlanScreen() {
   }
 
   return (
-    <RoleGuard allowedRoles={['superadmin']}>
+    <RoleGuard allowedRoles={['admin', 'superadmin']}>
       <SafeScreen>
         <Header title="Edit Plan" showBack onBack={() => router.back()} />
 

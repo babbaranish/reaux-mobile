@@ -111,10 +111,20 @@ export default function GymListScreen() {
 
       <View style={styles.gymActions}>
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton, styles.editButton]}
+          onPress={() => router.push(`/(app)/(admin)/gyms/${item._id}`)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="pencil-outline" size={18} color={colors.primary.yellow} />
+          <Text style={styles.editButtonText}>Edit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleDelete(item)}
+          activeOpacity={0.7}
         >
           <Ionicons name="trash-outline" size={18} color={colors.status.error} />
+          <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>
     </Card>
@@ -224,8 +234,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
   },
   actionButton: {
-    padding: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  editButton: {
+    backgroundColor: colors.background.light,
+    borderColor: colors.primary.yellow,
+  },
+  editButtonText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.primary.yellowDark,
+  },
+  deleteButton: {
+    backgroundColor: colors.background.light,
+    borderColor: colors.status.error,
+  },
+  deleteButtonText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.status.error,
   },
 });

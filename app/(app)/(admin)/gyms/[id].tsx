@@ -8,8 +8,9 @@ import {
   Alert,
   Modal,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../../../../src/components/layout/SafeScreen';
@@ -20,15 +21,22 @@ import { RoleGuard } from '../../../../src/components/guards/RoleGuard';
 import { gymsApi } from '../../../../src/api/endpoints/gyms';
 import { useImagePicker } from '../../../../src/hooks/useImagePicker';
 import { useAdminStore } from '../../../../src/stores/useAdminStore';
+import { useAuthStore } from '../../../../src/stores/useAuthStore';
 import { colors, fontFamily, spacing, borderRadius, layout } from '../../../../src/theme';
 import client from '../../../../src/api/client';
-import type { User } from '../../../../src/types/models';
+import type { User, Gym } from '../../../../src/types/models';
 
-export default function CreateGymScreen() {
+export default function EditGymScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { pickImage } = useImagePicker();
+  const currentUser = useAuthStore((s) => s.user);
+  const isSuperAdmin = currentUser?.role === 'superadmin';
   const { users, fetchUsers, isLoading: isLoadingUsers } = useAdminStore();
+
+  const [isLoadingGym, setIsLoadingGym] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gym, setGym] = useState<Gym | null>(null);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -39,15 +47,59 @@ export default function CreateGymScreen() {
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
   const [amenities, setAmenities] = useState('');
-  const [imageUris, setImageUris] = useState<string[]>([]);
-  const [logoUri, setLogoUri] = useState<string | null>(null);
+
+  // Existing images from server
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingLogo, setExistingLogo] = useState<string | null>(null);
+
+  // New images to upload
+  const [newImageUris, setNewImageUris] = useState<string[]>([]);
+  const [newLogoUri, setNewLogoUri] = useState<string | null>(null);
+
   const [selectedAdmin, setSelectedAdmin] = useState<string>('');
   const [showAdminPicker, setShowAdminPicker] = useState(false);
 
-  // Fetch admin users on mount
+  // Fetch gym data and admin users on mount
   useEffect(() => {
-    fetchUsers(1);
-  }, []);
+    fetchGymData();
+    if (isSuperAdmin) fetchUsers(1);
+  }, [id]);
+
+  const fetchGymData = async () => {
+    if (!id) return;
+
+    try {
+      setIsLoadingGym(true);
+      const response = await gymsApi.getById(id);
+      const gymData = response.data;
+      setGym(gymData);
+
+      // Pre-populate form fields
+      setName(gymData.name || '');
+      setDescription(gymData.description || '');
+      setPhone(gymData.phone || '');
+      setEmail(gymData.email || '');
+      setStreet(gymData.address?.street || '');
+      setCity(gymData.address?.city || '');
+      setState(gymData.address?.state || '');
+      setPincode(gymData.address?.pincode || '');
+      setAmenities((gymData.amenities || []).join(', '));
+
+      // Set existing images and logo
+      setExistingImages(gymData.images || []);
+      setExistingLogo(gymData.logo || null);
+
+      // Set admin if createdBy is populated as User object
+      if (gymData.createdBy && typeof gymData.createdBy === 'object') {
+        setSelectedAdmin(gymData.createdBy._id);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to load gym');
+      router.back();
+    } finally {
+      setIsLoadingGym(false);
+    }
+  };
 
   // Filter users to get only admins
   const adminUsers = users.filter(
@@ -56,22 +108,39 @@ export default function CreateGymScreen() {
 
   const selectedAdminUser = adminUsers.find((u) => u._id === selectedAdmin);
 
+  // Total images count (existing + new)
+  const totalImagesCount = existingImages.length + newImageUris.length;
+
   const handlePickImage = async () => {
     const result = await pickImage();
     if (result) {
-      setImageUris((prev) => [...prev, result.uri]);
+      setNewImageUris((prev) => [...prev, result.uri]);
     }
   };
 
-  const removeImage = (index: number) => {
-    setImageUris((prev) => prev.filter((_, i) => i !== index));
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImageUris((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handlePickLogo = async () => {
     const result = await pickImage();
     if (result) {
-      setLogoUri(result.uri);
+      setNewLogoUri(result.uri);
+      // Clear existing logo if new one is selected
+      setExistingLogo(null);
     }
+  };
+
+  const removeExistingLogo = () => {
+    setExistingLogo(null);
+  };
+
+  const removeNewLogo = () => {
+    setNewLogoUri(null);
   };
 
   const handleSubmit = async () => {
@@ -80,15 +149,22 @@ export default function CreateGymScreen() {
       return;
     }
 
+    if (!id) {
+      Alert.alert('Error', 'Gym ID is missing');
+      return;
+    }
+
     setIsSubmitting(true);
-    let createdGymId: string | null = null;
 
     try {
-      const hasMedia = imageUris.length > 0 || logoUri;
+      const hasNewMedia = newImageUris.length > 0 || newLogoUri;
 
-      if (hasMedia) {
+      if (hasNewMedia) {
+        // Use FormData for file uploads
         const form = new FormData();
-        imageUris.forEach((uri, idx) => {
+
+        // Add new images
+        newImageUris.forEach((uri, idx) => {
           if (uri) {
             const imageFile: any = {
               uri,
@@ -98,14 +174,18 @@ export default function CreateGymScreen() {
             form.append('images', imageFile);
           }
         });
-        if (logoUri) {
+
+        // Add new logo
+        if (newLogoUri) {
           const logoFile: any = {
-            uri: logoUri,
+            uri: newLogoUri,
             type: 'image/jpeg',
             name: 'gym_logo.jpg',
           };
           form.append('logo', logoFile);
         }
+
+        // Add other fields
         form.append('name', name.trim());
         if (description.trim()) form.append('description', description.trim());
         if (phone.trim()) form.append('phone', phone.trim());
@@ -114,19 +194,28 @@ export default function CreateGymScreen() {
         if (city.trim()) form.append('address[city]', city.trim());
         if (state.trim()) form.append('address[state]', state.trim());
         if (pincode.trim()) form.append('address[pincode]', pincode.trim());
+
         const amenitiesList = amenities
           .split(',')
           .map((a) => a.trim())
           .filter(Boolean);
         amenitiesList.forEach((a) => form.append('amenities[]', a));
 
-        const response = await client.post('/gyms', form, {
+        // Add existing images to preserve them
+        existingImages.forEach((url) => form.append('existingImages[]', url));
+
+        // Add existing logo if not replaced
+        if (existingLogo && !newLogoUri) {
+          form.append('existingLogo', existingLogo);
+        }
+
+        await client.put(`/gyms/${id}`, form, {
           headers: { 'Content-Type': 'multipart/form-data' },
           timeout: 60_000,
         });
-        createdGymId = response.data?.data?._id;
       } else {
-        const response = await gymsApi.create({
+        // Use JSON for text-only updates
+        await gymsApi.update(id, {
           name: name.trim(),
           description: description.trim() || undefined,
           phone: phone.trim() || undefined,
@@ -142,43 +231,73 @@ export default function CreateGymScreen() {
             .map((a) => a.trim())
             .filter(Boolean),
         });
-        createdGymId = response.data?._id;
       }
 
-      // Assign admin if selected
-      if (selectedAdmin && createdGymId) {
-        try {
-          await gymsApi.assignAdmin(createdGymId, selectedAdmin);
-          Alert.alert('Success', 'Gym created and admin assigned successfully', [
-            { text: 'OK', onPress: () => router.back() },
-          ]);
-        } catch (assignError: any) {
-          console.error('Error assigning admin:', assignError);
-          const assignErrorMsg = assignError?.message || 'Failed to assign admin';
-          Alert.alert(
-            'Partial Success',
-            `Gym created successfully, but admin assignment failed: ${assignErrorMsg}`,
-            [{ text: 'OK', onPress: () => router.back() }]
-          );
+      // Update admin assignment if changed
+      if (selectedAdmin && gym) {
+        const currentAdminId = typeof gym.createdBy === 'object'
+          ? gym.createdBy._id
+          : gym.createdBy;
+
+        if (selectedAdmin !== currentAdminId) {
+          try {
+            await gymsApi.assignAdmin(id, selectedAdmin);
+          } catch (assignError: any) {
+            console.error('Error assigning admin:', assignError);
+            const assignErrorMsg = assignError?.message || 'Failed to assign admin';
+            Alert.alert(
+              'Partial Success',
+              `Gym updated successfully, but admin assignment failed: ${assignErrorMsg}`,
+              [{ text: 'OK', onPress: () => router.back() }]
+            );
+            return;
+          }
         }
-      } else {
-        Alert.alert('Success', 'Gym created successfully', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
       }
+
+      Alert.alert('Success', 'Gym updated successfully', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (error: any) {
-      console.error('Error creating gym:', error);
-      const errorMessage = error?.message || error?.toString() || 'Failed to create gym';
+      console.error('Error updating gym:', error);
+      const errorMessage = error?.message || error?.toString() || 'Failed to update gym';
       Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (isLoadingGym) {
+    return (
+      <RoleGuard allowedRoles={['admin', 'superadmin']}>
+        <SafeScreen>
+          <Header title="Edit Gym" showBack onBack={() => router.back()} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary.yellow} />
+            <Text style={styles.loadingText}>Loading gym...</Text>
+          </View>
+        </SafeScreen>
+      </RoleGuard>
+    );
+  }
+
+  if (!gym) {
+    return (
+      <RoleGuard allowedRoles={['admin', 'superadmin']}>
+        <SafeScreen>
+          <Header title="Edit Gym" showBack onBack={() => router.back()} />
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Gym not found</Text>
+          </View>
+        </SafeScreen>
+      </RoleGuard>
+    );
+  }
+
   return (
-    <RoleGuard allowedRoles={['superadmin']}>
+    <RoleGuard allowedRoles={['admin', 'superadmin']}>
       <SafeScreen>
-        <Header title="Create Gym" showBack onBack={() => router.back()} />
+        <Header title="Edit Gym" showBack onBack={() => router.back()} />
 
         <ScrollView
           style={styles.scroll}
@@ -189,8 +308,26 @@ export default function CreateGymScreen() {
           {/* Images */}
           <Text style={styles.sectionTitle}>Images</Text>
           <View style={styles.imagesRow}>
-            {imageUris.map((uri, idx) => (
-              <View key={idx} style={styles.imageContainer}>
+            {/* Existing images */}
+            {existingImages.map((url, idx) => (
+              <View key={`existing-${idx}`} style={styles.imageContainer}>
+                <Image
+                  source={{ uri: url }}
+                  style={styles.imagePreview}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <TouchableOpacity
+                  style={styles.removeImageBtn}
+                  onPress={() => removeExistingImage(idx)}
+                >
+                  <Ionicons name="close-circle" size={22} color={colors.text.white} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {/* New images */}
+            {newImageUris.map((uri, idx) => (
+              <View key={`new-${idx}`} style={styles.imageContainer}>
                 <Image
                   source={{ uri }}
                   style={styles.imagePreview}
@@ -199,13 +336,16 @@ export default function CreateGymScreen() {
                 />
                 <TouchableOpacity
                   style={styles.removeImageBtn}
-                  onPress={() => removeImage(idx)}
+                  onPress={() => removeNewImage(idx)}
                 >
                   <Ionicons name="close-circle" size={22} color={colors.text.white} />
                 </TouchableOpacity>
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>NEW</Text>
+                </View>
               </View>
             ))}
-            {imageUris.length < 5 && (
+            {totalImagesCount < 5 && (
               <TouchableOpacity
                 style={styles.addImageBtn}
                 onPress={handlePickImage}
@@ -220,20 +360,38 @@ export default function CreateGymScreen() {
           {/* Logo */}
           <Text style={styles.sectionTitle}>Logo</Text>
           <View style={styles.imagesRow}>
-            {logoUri ? (
+            {existingLogo && !newLogoUri ? (
               <View style={styles.imageContainer}>
                 <Image
-                  source={{ uri: logoUri }}
+                  source={{ uri: existingLogo }}
                   style={styles.imagePreview}
                   contentFit="cover"
                   transition={200}
                 />
                 <TouchableOpacity
                   style={styles.removeImageBtn}
-                  onPress={() => setLogoUri(null)}
+                  onPress={removeExistingLogo}
                 >
                   <Ionicons name="close-circle" size={22} color={colors.text.white} />
                 </TouchableOpacity>
+              </View>
+            ) : newLogoUri ? (
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: newLogoUri }}
+                  style={styles.imagePreview}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <TouchableOpacity
+                  style={styles.removeImageBtn}
+                  onPress={removeNewLogo}
+                >
+                  <Ionicons name="close-circle" size={22} color={colors.text.white} />
+                </TouchableOpacity>
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>NEW</Text>
+                </View>
               </View>
             ) : (
               <TouchableOpacity
@@ -337,36 +495,40 @@ export default function CreateGymScreen() {
             />
           </View>
 
-          {/* Admin Selection */}
-          <Text style={styles.sectionTitle}>Assign Admin (Optional)</Text>
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() => setShowAdminPicker(true)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.selectButtonContent}>
-              <View style={styles.selectButtonLeft}>
-                <Ionicons name="person-outline" size={20} color={colors.text.secondary} />
-                <Text style={styles.selectButtonText}>
-                  {selectedAdminUser ? selectedAdminUser.name : 'Select an admin'}
-                </Text>
-              </View>
-              <Ionicons name="chevron-down" size={20} color={colors.text.light} />
-            </View>
-          </TouchableOpacity>
-          {selectedAdminUser && (
-            <View style={styles.selectedAdminInfo}>
-              <Text style={styles.selectedAdminEmail}>{selectedAdminUser.email}</Text>
-              <Text style={styles.selectedAdminRole}>
-                {selectedAdminUser.role === 'superadmin' ? 'Superadmin' : 'Admin'}
-              </Text>
-            </View>
+          {/* Admin Selection — superadmin only */}
+          {isSuperAdmin && (
+            <>
+              <Text style={styles.sectionTitle}>Assign Admin (Optional)</Text>
+              <TouchableOpacity
+                style={styles.selectButton}
+                onPress={() => setShowAdminPicker(true)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.selectButtonContent}>
+                  <View style={styles.selectButtonLeft}>
+                    <Ionicons name="person-outline" size={20} color={colors.text.secondary} />
+                    <Text style={styles.selectButtonText}>
+                      {selectedAdminUser ? selectedAdminUser.name : 'Select an admin'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color={colors.text.light} />
+                </View>
+              </TouchableOpacity>
+              {selectedAdminUser && (
+                <View style={styles.selectedAdminInfo}>
+                  <Text style={styles.selectedAdminEmail}>{selectedAdminUser.email}</Text>
+                  <Text style={styles.selectedAdminRole}>
+                    {selectedAdminUser.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                  </Text>
+                </View>
+              )}
+            </>
           )}
 
           {/* Submit */}
           <View style={styles.submitContainer}>
             <Button
-              title="Create Gym"
+              title="Update Gym"
               onPress={handleSubmit}
               variant="primary"
               size="lg"
@@ -469,6 +631,19 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: 40,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: layout.screenPadding,
+  },
+  loadingText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+    marginTop: spacing.md,
+  },
   sectionTitle: {
     fontFamily: fontFamily.bold,
     fontSize: 16,
@@ -505,6 +680,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
+  },
+  newBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: colors.primary.yellow,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: borderRadius.tag,
+  },
+  newBadgeText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 9,
+    lineHeight: 12,
+    color: colors.text.onPrimary,
   },
   addImageBtn: {
     width: 80,

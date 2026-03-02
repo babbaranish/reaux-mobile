@@ -11,6 +11,7 @@ import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { UserCard } from '../../../../src/components/cards/UserCard';
 import { RoleGuard } from '../../../../src/components/guards/RoleGuard';
 import { useAdminStore } from '../../../../src/stores/useAdminStore';
+import { useAuthStore } from '../../../../src/stores/useAuthStore';
 import { useUIStore } from '../../../../src/stores/useUIStore';
 import { exportUsersListPDF } from '../../../../src/utils/pdfExport';
 import { colors, fontFamily, spacing, borderRadius } from '../../../../src/theme';
@@ -18,7 +19,7 @@ import type { User, Role } from '../../../../src/types/models';
 
 type TabFilter = 'all' | 'admin' | 'user';
 
-const TABS: { key: TabFilter; label: string }[] = [
+const SUPERADMIN_TABS: { key: TabFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'admin', label: 'Admins' },
   { key: 'user', label: 'Users' },
@@ -27,6 +28,8 @@ const TABS: { key: TabFilter; label: string }[] = [
 export default function UsersScreen() {
   const router = useRouter();
   const { users, isLoading, pagination, fetchUsers, updateUserStatus } = useAdminStore();
+  const currentUser = useAuthStore((s) => s.user);
+  const isSuperAdmin = currentUser?.role === 'superadmin';
   const showToast = useUIStore((s) => s.showToast);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
@@ -37,6 +40,9 @@ export default function UsersScreen() {
   }, []);
 
   const filteredUsers = users.filter((user) => {
+    // Admins should only see regular users (safety net for backend filtering)
+    if (!isSuperAdmin && user.role !== 'user') return false;
+
     const matchesSearch =
       user.name?.toLowerCase().includes(search.toLowerCase()) ||
       user.email?.toLowerCase().includes(search.toLowerCase());
@@ -62,14 +68,19 @@ export default function UsersScreen() {
     });
   }, [router]);
 
+  const handleUserPress = useCallback((user: User) => {
+    router.push(`/(app)/(admin)/users/${user._id}`);
+  }, [router]);
+
   const renderItem = useCallback(
     ({ item }: { item: User }) => (
       <UserCard
         user={item}
+        onPress={handleUserPress}
         onDeactivate={handleDeactivate}
       />
     ),
-    [handleDeactivate],
+    [handleUserPress, handleDeactivate],
   );
 
   const handleExportPDF = async () => {
@@ -120,26 +131,28 @@ export default function UsersScreen() {
             />
           </View>
 
-          {/* Tabs */}
-          <View style={styles.tabRow}>
-            {TABS.map((tab) => (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === tab.key && styles.tabTextActive,
-                  ]}
+          {/* Tabs — only for superadmin (admins only see their gym's regular users) */}
+          {isSuperAdmin && (
+            <View style={styles.tabRow}>
+              {SUPERADMIN_TABS.map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                  activeOpacity={0.7}
                 >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab.key && styles.tabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* User List */}
           <View style={styles.listContainer}>

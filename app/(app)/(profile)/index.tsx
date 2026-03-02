@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../../../src/components/layout/SafeScreen';
 import { Header } from '../../../src/components/layout/Header';
@@ -17,6 +18,7 @@ import { Button } from '../../../src/components/ui/Button';
 import { Card } from '../../../src/components/ui/Card';
 import { useAuthStore } from '../../../src/stores/useAuthStore';
 import { useNotificationStore } from '../../../src/stores/useNotificationStore';
+import { usersApi } from '../../../src/api/endpoints/users';
 import { useImagePicker } from '../../../src/hooks/useImagePicker';
 import {
   colors,
@@ -26,7 +28,7 @@ import {
   borderRadius,
   layout,
 } from '../../../src/theme';
-import type { Gym } from '../../../src/types/models';
+import type { Gym, BirthdayUser, UpcomingBirthdayUser } from '../../../src/types/models';
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -46,10 +48,35 @@ export default function ProfileScreen() {
   const isSuperadmin = user?.role === 'superadmin';
   const gym = typeof user?.gymId === 'object' ? (user.gymId as Gym) : null;
 
+  const [todayBirthdays, setTodayBirthdays] = useState<BirthdayUser[]>([]);
+  const [upcomingBirthdays, setUpcomingBirthdays] = useState<UpcomingBirthdayUser[]>([]);
+
   // Fetch unread notification count on mount
   useEffect(() => {
     getUnreadCount();
   }, [getUnreadCount]);
+
+  // Fetch birthdays for admin/superadmin
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchBirthdays = async () => {
+      try {
+        const [todayRes, upcomingRes] = await Promise.all([
+          usersApi.getTodayBirthdays(),
+          usersApi.getUpcomingBirthdays(7),
+        ]);
+        const todayList = todayRes.data ?? [];
+        setTodayBirthdays(todayList);
+        const todayIds = new Set(todayList.map((u) => u._id));
+        setUpcomingBirthdays(
+          (upcomingRes.data ?? []).filter((u) => u.daysUntil > 0 && !todayIds.has(u._id)),
+        );
+      } catch {
+        // Silently fail
+      }
+    };
+    fetchBirthdays();
+  }, [isAdmin]);
 
   const handleNameChange = useCallback(
     (value: string) => {
@@ -175,10 +202,23 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Admin: Gym Details */}
-        {isAdmin && gym && (
+        {/* Gym Details - All users with gym assignment */}
+        {gym && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Gym Details</Text>
+
+            {/* Gym Logo/Image */}
+            {(gym.logo || (gym.images && gym.images.length > 0)) && (
+              <View style={styles.gymImageContainer}>
+                <Image
+                  source={{ uri: gym.logo || gym.images[0] }}
+                  style={styles.gymImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+              </View>
+            )}
+
             <Input
               label="Gym Name"
               placeholder="Gym name"
@@ -246,6 +286,64 @@ export default function ProfileScreen() {
           </Card>
         )}
 
+        {/* User Management - Admin */}
+        {isAdmin && (
+          <Card
+            style={styles.linkCard}
+            onPress={() => router.push('/(app)/(admin)/users')}
+          >
+            <View style={styles.linkCardContent}>
+              <View style={styles.linkCardLeft}>
+                <Ionicons
+                  name="person-add-outline"
+                  size={22}
+                  color={colors.text.primary}
+                />
+                <View style={styles.linkCardText}>
+                  <Text style={styles.linkCardTitle}>User Management</Text>
+                  <Text style={styles.linkCardSubtitle}>
+                    Add and manage users
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.text.light}
+              />
+            </View>
+          </Card>
+        )}
+
+        {/* My Gym - Admin with gym */}
+        {isAdmin && !isSuperadmin && gym && (
+          <Card
+            style={styles.linkCard}
+            onPress={() => router.push(`/(app)/(admin)/gyms/${gym._id}`)}
+          >
+            <View style={styles.linkCardContent}>
+              <View style={styles.linkCardLeft}>
+                <Ionicons
+                  name="fitness-outline"
+                  size={22}
+                  color={colors.text.primary}
+                />
+                <View style={styles.linkCardText}>
+                  <Text style={styles.linkCardTitle}>Edit My Gym</Text>
+                  <Text style={styles.linkCardSubtitle}>
+                    Update gym details, images, and amenities
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.text.light}
+              />
+            </View>
+          </Card>
+        )}
+
         {/* My Orders */}
         {isAdmin && (
           <Card
@@ -273,6 +371,114 @@ export default function ProfileScreen() {
               />
             </View>
           </Card>
+        )}
+
+        {/* My Membership - All Users */}
+        <Card
+          style={styles.linkCard}
+          onPress={() => router.push('/(app)/(profile)/memberships')}
+        >
+          <View style={styles.linkCardContent}>
+            <View style={styles.linkCardLeft}>
+              <Ionicons
+                name="card-outline"
+                size={22}
+                color={colors.text.primary}
+              />
+              <View style={styles.linkCardText}>
+                <Text style={styles.linkCardTitle}>My Membership</Text>
+                <Text style={styles.linkCardSubtitle}>
+                  View your membership status and details
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.text.light}
+            />
+          </View>
+        </Card>
+
+        {/* Manage Memberships - Admin Only */}
+        {isAdmin && (
+          <Card
+            style={styles.linkCard}
+            onPress={() => router.push('/(app)/(admin)/manage-memberships')}
+          >
+            <View style={styles.linkCardContent}>
+              <View style={styles.linkCardLeft}>
+                <Ionicons
+                  name="people-outline"
+                  size={22}
+                  color={colors.text.primary}
+                />
+                <View style={styles.linkCardText}>
+                  <Text style={styles.linkCardTitle}>Manage Memberships</Text>
+                  <Text style={styles.linkCardSubtitle}>
+                    Manage gym memberships and plans
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.text.light}
+              />
+            </View>
+          </Card>
+        )}
+
+        {/* Birthdays - Admin Only */}
+        {isAdmin && (todayBirthdays.length > 0 || upcomingBirthdays.length > 0) && (
+          <View style={styles.birthdaySection}>
+            <Text style={styles.birthdaySectionTitle}>Birthdays</Text>
+
+            {/* Today's Birthdays */}
+            {todayBirthdays.length > 0 && (
+              <View style={[styles.birthdayCard, upcomingBirthdays.length > 0 && { marginBottom: spacing.sm }]}>
+                <View style={styles.birthdayHeader}>
+                  <Ionicons name="gift-outline" size={16} color={colors.status.warning} />
+                  <Text style={styles.birthdayHeaderText}>Today</Text>
+                </View>
+                {todayBirthdays.map((b) => (
+                  <View key={b._id} style={styles.birthdayItem}>
+                    <Avatar uri={b.avatar} name={b.name} size={32} />
+                    <View style={styles.birthdayInfo}>
+                      <Text style={styles.birthdayName}>{b.name}</Text>
+                      {b.gymId?.name && (
+                        <Text style={styles.birthdayGym}>{b.gymId.name}</Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Upcoming Birthdays */}
+            {upcomingBirthdays.length > 0 && (
+              <View style={styles.birthdayCard}>
+                <View style={styles.birthdayHeader}>
+                  <Ionicons name="calendar-outline" size={16} color={colors.status.info} />
+                  <Text style={styles.birthdayHeaderText}>Upcoming</Text>
+                </View>
+                {upcomingBirthdays.map((b) => (
+                  <View key={b._id} style={styles.birthdayItem}>
+                    <Avatar uri={b.avatar} name={b.name} size={32} />
+                    <View style={styles.birthdayInfo}>
+                      <Text style={styles.birthdayName}>{b.name}</Text>
+                      {b.gymId?.name && (
+                        <Text style={styles.birthdayGym}>{b.gymId.name}</Text>
+                      )}
+                    </View>
+                    <Text style={styles.daysUntilText}>
+                      {b.daysUntil === 1 ? 'Tomorrow' : `In ${b.daysUntil}d`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
         )}
 
         {/* Notifications */}
@@ -350,6 +556,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xxl,
   },
+  gymImageContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  gymImage: {
+    width: 120,
+    height: 120,
+    borderRadius: borderRadius.card,
+  },
   uploadLink: {
     fontFamily: fontFamily.medium,
     fontSize: 14,
@@ -414,6 +629,59 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: colors.text.secondary,
     marginTop: 2,
+  },
+  birthdaySection: {
+    marginBottom: spacing.md,
+  },
+  birthdaySectionTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  birthdayCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+  },
+  birthdayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  birthdayHeaderText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
+    color: colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  birthdayItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  birthdayInfo: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  birthdayName: {
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.text.primary,
+  },
+  birthdayGym: {
+    fontFamily: fontFamily.regular,
+    fontSize: 11,
+    color: colors.text.secondary,
+  },
+  daysUntilText: {
+    fontFamily: fontFamily.medium,
+    fontSize: 11,
+    color: colors.text.secondary,
   },
   notificationBadge: {
     backgroundColor: colors.status.error,

@@ -108,7 +108,7 @@ export default function CreateMembershipPlanScreen() {
   };
 
   return (
-    <RoleGuard allowedRoles={['superadmin']}>
+    <RoleGuard allowedRoles={['admin', 'superadmin']}>
       <SafeScreen>
         <Header title="Create Plan" showBack onBack={() => router.back()} />
 
