@@ -17,6 +17,7 @@ import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { useUIStore } from '../../src/stores/useUIStore';
+import { isValidEmail, isValidIndianPhone, isValidName, isValidPassword } from '../../src/utils/validators';
 import { colors, fontFamily, spacing } from '../../src/theme';
 
 export default function RegisterScreen() {
@@ -30,11 +31,23 @@ export default function RegisterScreen() {
   const showToast = useUIStore((s) => s.showToast);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      showToast('Please fill in all required fields', 'error');
+    if (!isValidName(name)) {
+      showToast('Name must be at least 2 characters', 'error');
       return;
     }
-    if (password.length < 6) {
+    if (!isValidEmail(email)) {
+      showToast('Please enter a valid email address', 'error');
+      return;
+    }
+    if (!phone.trim()) {
+      showToast('Phone number is required', 'error');
+      return;
+    }
+    if (!isValidIndianPhone(phone)) {
+      showToast('Please enter a valid 10-digit Indian phone number', 'error');
+      return;
+    }
+    if (!isValidPassword(password)) {
       showToast('Password must be at least 6 characters', 'error');
       return;
     }
@@ -112,8 +125,8 @@ export default function RegisterScreen() {
                   />
 
                   <Input
-                    label="PHONE (OPTIONAL)"
-                    placeholder="Enter your phone number"
+                    label="PHONE"
+                    placeholder="Enter 10-digit phone number"
                     value={phone}
                     onChangeText={setPhone}
                     keyboardType="phone-pad"

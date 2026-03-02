@@ -7,6 +7,8 @@ export type BmiCategory = 'underweight' | 'normal' | 'overweight' | 'obese';
 export type DietCategory = 'weight-loss' | 'muscle-gain' | 'maintenance' | 'keto' | 'vegan' | 'other';
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 export type ChallengeType = 'steps' | 'workout' | 'diet' | 'custom';
+export type WorkoutCategory = 'strength' | 'cardio' | 'flexibility' | 'hiit' | 'yoga' | 'crossfit' | 'other';
+export type WorkoutDifficulty = 'beginner' | 'intermediate' | 'advanced';
 export type NotificationType = 'system' | 'order' | 'challenge' | 'community' | 'diet';
 export type DiscountType = 'percentage' | 'fixed';
 export type MembershipStatus = 'active' | 'expired' | 'cancelled';
@@ -75,7 +77,11 @@ export interface BmiRecord {
   height: number;
   weight: number;
   bmi: number;
+  bmr?: number;
+  age?: number;
+  gender?: Gender;
   category: BmiCategory;
+  message?: string;
   createdAt: string;
 }
 
@@ -289,6 +295,34 @@ export interface SalesReport {
   totalRevenue: number;
   monthlyBreakdown: Array<{ month: string; revenue: number; orders: number }>;
   topProducts: Array<{ product: Product; totalSold: number; revenue: number }>;
+}
+
+// Workout
+export interface Exercise {
+  name: string;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+  duration?: number;
+  restTime?: number;
+  notes?: string;
+}
+
+export interface Workout {
+  _id: string;
+  title: string;
+  description?: string;
+  category: WorkoutCategory;
+  difficulty: WorkoutDifficulty;
+  duration: number;
+  caloriesBurn?: number;
+  image?: string;
+  tags: string[];
+  exercises: Exercise[];
+  createdBy: string | User;
+  isDeleted?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Membership Plan

@@ -20,6 +20,7 @@ import { usersApi } from '../../../../src/api/endpoints/users';
 import { gymsApi } from '../../../../src/api/endpoints/gyms';
 import { useAuthStore } from '../../../../src/stores/useAuthStore';
 import { useUIStore } from '../../../../src/stores/useUIStore';
+import { isValidEmail, isValidIndianPhone, isValidName, isValidPassword, isValidDateOfBirth } from '../../../../src/utils/validators';
 import { colors, fontFamily, spacing, borderRadius } from '../../../../src/theme';
 import type { Role, UserStatus, Gender, Gym } from '../../../../src/types/models';
 
@@ -101,13 +102,28 @@ export default function CreateUserScreen() {
       : gyms.find((g) => g._id === selectedGymId)?.name || '';
 
   const handleCreate = async () => {
-    if (!name.trim() || !email.trim() || !password.trim() || !dateOfBirth.trim()) {
-      showToast('Please fill in all required fields', 'error');
+    if (!isValidName(name)) {
+      showToast('Name must be at least 2 characters', 'error');
       return;
     }
 
-    if (password.length < 6) {
+    if (!isValidEmail(email)) {
+      showToast('Please enter a valid email address', 'error');
+      return;
+    }
+
+    if (phone.trim() && !isValidIndianPhone(phone)) {
+      showToast('Please enter a valid 10-digit Indian phone number', 'error');
+      return;
+    }
+
+    if (!isValidPassword(password)) {
       showToast('Password must be at least 6 characters', 'error');
+      return;
+    }
+
+    if (!isValidDateOfBirth(dateOfBirth)) {
+      showToast('Please enter a valid date of birth (YYYY-MM-DD)', 'error');
       return;
     }
 

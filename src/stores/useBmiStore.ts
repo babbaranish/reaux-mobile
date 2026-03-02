@@ -8,7 +8,7 @@ interface BmiState {
   isLoading: boolean;
   error: string | null;
 
-  recordBmi: (height: number, weight: number) => Promise<void>;
+  recordBmi: (height: number, weight: number) => Promise<BmiRecord>;
   fetchHistory: () => Promise<void>;
   getLatest: () => Promise<void>;
   clearError: () => void;
@@ -30,6 +30,7 @@ export const useBmiStore = create<BmiState>((set, get) => ({
         latestRecord: newRecord,
         isLoading: false,
       }));
+      return newRecord;
     } catch (err: any) {
       set({
         error: err.message || 'Failed to record BMI',

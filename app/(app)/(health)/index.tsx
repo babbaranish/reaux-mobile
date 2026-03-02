@@ -15,7 +15,7 @@ import { Button } from '../../../src/components/ui/Button';
 import { Badge } from '../../../src/components/ui/Badge';
 import { useBmiStore } from '../../../src/stores/useBmiStore';
 import { colors, fontFamily, typography, spacing, borderRadius, shadows } from '../../../src/theme';
-import type { BmiCategory, Gender } from '../../../src/types/models';
+import type { BmiCategory, BmiRecord } from '../../../src/types/models';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDER_PADDING = 20; // padding on each side
@@ -154,8 +154,7 @@ const sliderStyles = StyleSheet.create({
 export default function HealthScreen() {
   const [height, setHeight] = useState(170);
   const [weight, setWeight] = useState(70);
-  const [gender, setGender] = useState<Gender>('male');
-  const [result, setResult] = useState<{ bmi: number; category: BmiCategory } | null>(null);
+  const [result, setResult] = useState<{ bmi: number; category: BmiCategory; bmr?: number; message?: string } | null>(null);
 
   const { recordBmi, getLatest, latestRecord, isLoading } = useBmiStore();
 
@@ -164,11 +163,19 @@ export default function HealthScreen() {
   }, []);
 
   const handleCalculate = useCallback(async () => {
+    // Show local result immediately
     const localResult = calculateBmiLocal(height, weight);
     setResult(localResult);
 
     try {
-      await recordBmi(height, weight);
+      const apiRecord = await recordBmi(height, weight);
+      // Update with API response (includes BMR, message, etc.)
+      setResult({
+        bmi: apiRecord.bmi,
+        category: apiRecord.category,
+        bmr: apiRecord.bmr,
+        message: apiRecord.message,
+      });
     } catch {
       // Still show local result even if API fails
     }
@@ -242,51 +249,6 @@ export default function HealthScreen() {
           </View>
         </View>
 
-        {/* Gender toggle */}
-        <View style={styles.genderSection}>
-          <Text style={styles.sliderLabel}>Gender</Text>
-          <View style={styles.genderToggle}>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'male' && styles.genderButtonActive]}
-              onPress={() => setGender('male')}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="male"
-                size={18}
-                color={gender === 'male' ? colors.text.primary : colors.text.secondary}
-              />
-              <Text
-                style={[
-                  styles.genderText,
-                  gender === 'male' && styles.genderTextActive,
-                ]}
-              >
-                Male
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'female' && styles.genderButtonActive]}
-              onPress={() => setGender('female')}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="female"
-                size={18}
-                color={gender === 'female' ? colors.text.primary : colors.text.secondary}
-              />
-              <Text
-                style={[
-                  styles.genderText,
-                  gender === 'female' && styles.genderTextActive,
-                ]}
-              >
-                Female
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Calculate button */}
         <Button
           title="CALCULATE BMI"
@@ -324,7 +286,19 @@ export default function HealthScreen() {
               </View>
             </View>
 
-            <Text style={styles.resultMessage}>{bmiConfig.message}</Text>
+            {/* BMR */}
+            {result.bmr && (
+              <View style={styles.bmrRow}>
+                <Ionicons name="flame-outline" size={18} color={colors.status.warning} />
+                <Text style={styles.bmrText}>
+                  BMR: <Text style={styles.bmrValue}>{Math.round(result.bmr)} cal/day</Text>
+                </Text>
+              </View>
+            )}
+
+            <Text style={styles.resultMessage}>
+              {result.message || bmiConfig.message}
+            </Text>
           </View>
         )}
 
@@ -356,6 +330,26 @@ export default function HealthScreen() {
         >
           <Ionicons name="time-outline" size={20} color={colors.text.primary} />
           <Text style={styles.historyButtonText}>See History</Text>
+        </TouchableOpacity>
+
+        {/* Workouts Section */}
+        <TouchableOpacity
+          style={[styles.workoutCard, shadows.card]}
+          onPress={() => router.push('/(app)/(health)/workouts' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.workoutCardContent}>
+            <View style={styles.workoutCardIcon}>
+              <Ionicons name="barbell-outline" size={28} color={colors.primary.dark} />
+            </View>
+            <View style={styles.workoutCardTextBlock}>
+              <Text style={styles.workoutCardTitle}>Explore Workouts</Text>
+              <Text style={styles.workoutCardSubtitle}>
+                Browse workout plans for strength, cardio, HIIT and more
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.text.light} />
+          </View>
         </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
@@ -420,37 +414,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: colors.text.light,
   },
-  genderSection: {
-    marginBottom: spacing.xxl,
-  },
-  genderToggle: {
-    flexDirection: 'row',
-    marginTop: spacing.md,
-    backgroundColor: colors.border.light,
-    borderRadius: borderRadius.pill,
-    padding: 3,
-  },
-  genderButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.pill,
-  },
-  genderButtonActive: {
-    backgroundColor: colors.primary.yellow,
-  },
-  genderText: {
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.secondary,
-  },
-  genderTextActive: {
-    color: colors.text.primary,
-  },
   resultCard: {
     backgroundColor: colors.background.card,
     borderRadius: borderRadius.card,
@@ -508,6 +471,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.background.white,
   },
+  bmrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  bmrText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
+  bmrValue: {
+    fontFamily: fontFamily.bold,
+    color: colors.text.primary,
+  },
   resultMessage: {
     fontFamily: fontFamily.regular,
     fontSize: 14,
@@ -558,6 +536,42 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     color: colors.text.primary,
+  },
+  workoutCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.card,
+    padding: spacing.lg,
+    marginTop: spacing.xxl,
+  },
+  workoutCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  workoutCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary.light,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  workoutCardTextBlock: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  workoutCardTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.text.primary,
+  },
+  workoutCardSubtitle: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text.secondary,
+    marginTop: 2,
   },
   bottomSpacer: {
     height: spacing.xxxl,
